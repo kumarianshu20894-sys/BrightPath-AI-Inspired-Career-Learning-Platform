@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Learning Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Premium SaaS Dashboard Styles */
+    .dashboard-hero {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(6, 182, 212, 0.05) 100%);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        padding: 35px;
+        margin-bottom: 40px;
+        position: relative;
+    }
+    
+    .metric-bubble {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    /* Resume Card Layout */
+    .resume-card {
+        border-left: 4px solid var(--primary);
+    }
+
+    /* Netflix Style Course Slider */
+    .netflix-slider {
+        display: flex;
+        gap: 20px;
+        overflow-x: auto;
+        padding-bottom: 15px;
+        scroll-snap-type: x mandatory;
+    }
+    .netflix-slider::-webkit-scrollbar {
+        height: 6px;
+    }
+    .netflix-slider::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+    }
+    .netflix-card {
+        flex: 0 0 320px;
+        scroll-snap-align: start;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+    .netflix-card:hover {
+        transform: scale(1.03);
+    }
+    .netflix-img-placeholder {
+        height: 150px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 20px;
+        letter-spacing: -0.5px;
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+    .netflix-img-placeholder.frontend {
+        background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+    }
+
+    /* Roadmap Preview Tree */
+    .roadmap-preview-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        padding: 20px 0;
+        overflow-x: auto;
+    }
+    .roadmap-preview-line::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--border);
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+    .roadmap-preview-node {
+        position: relative;
+        z-index: 2;
+        background: var(--bg-main);
+        padding: 0 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 130px;
+    }
+    .roadmap-preview-circle {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 13px;
+        transition: var(--transition);
+        border: 2px solid var(--border);
+    }
+    .roadmap-preview-circle.completed {
+        background: var(--success);
+        border-color: var(--success);
+        color: white;
+        box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    }
+    .roadmap-preview-circle.current {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+        box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+    }
+    .roadmap-preview-circle.locked {
+        background: var(--bg-secondary);
+        color: var(--text-muted);
+    }
+    .roadmap-node-label {
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 8px;
+        text-align: center;
+        max-width: 100px;
+        color: var(--text-muted);
+    }
+    .roadmap-preview-circle.current + .roadmap-node-label {
+        color: var(--primary);
+    }
+    .roadmap-preview-circle.completed + .roadmap-node-label {
+        color: var(--success);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5" data-aos="fade-up">
+
+    <!-- ==========================================
+         FIRST SECTION: WELCOME & HERO
+         ========================================== -->
+    <div class="dashboard-hero mb-4">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1.5 rounded-pill mb-3 fw-bold small">
+                    Target Goal: {{ profile.career_goal.name }}
+                </span>
+                <h2 class="fw-bold text-white mb-2">Welcome Back, {{ user.first_name|default:user.username }} 👋</h2>
+                <p class="text-muted small mb-4">You are progressing steadily towards becoming a professional deploy-ready software engineer. Keep up the streak!</p>
+                
+                <div class="d-flex gap-3 align-items-center flex-wrap">
+                    {% if next_step %}
+                        <a href="{% url 'module_view' next_step.id %}" class="btn-primary-gradient px-4 py-2.5" style="text-decoration: none;">
+                            <i class="fas fa-play me-2"></i> Continue Learning
+                        </a>
+                        <span class="text-muted small">Next Recommended: <strong class="text-white">{{ next_step.title }}</strong></span>
+                    {% else %}
+                        <a href="{% url 'planner' %}" class="btn-primary-gradient px-4 py-2.5" style="text-decoration: none;">
+                            Explore Roadmap Nodes
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="col-lg-5">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="metric-bubble">
+                            <span class="text-warning h4 m-0"><i class="fas fa-fire"></i></span>
+                            <div>
+                                <small class="text-muted d-block font-monospace" style="font-size:10px;">Streak</small>
+                                <span class="fw-bold text-white">{{ streak }} Day{{ streak|pluralize }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-bubble">
+                            <span class="text-info h4 m-0"><i class="fas fa-chart-pie"></i></span>
+                            <div>
+                                <small class="text-muted d-block font-monospace" style="font-size:10px;">Readiness</small>
+                                <span class="fw-bold text-white">{{ readiness }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-bubble">
+                            <span class="text-success h4 m-0"><i class="fas fa-award"></i></span>
+                            <div>
+                                <small class="text-muted d-block font-monospace" style="font-size:10px;">Current Level</small>
+                                <span class="fw-bold text-white">Level {{ level }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-bubble">
+                            <span class="text-primary h4 m-0"><i class="fas fa-bullseye"></i></span>
+                            <div>
+                                <small class="text-muted d-block font-monospace" style="font-size:10px;">Today's Goal</small>
+                                <span class="fw-bold text-white">Pass 1 Node</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         SECOND SECTION: CONTINUE LEARNING CARD
+         ========================================== -->
+    {% if continue_courses %}
+        <div class="row mb-5">
+            <div class="col-12">
+                <h5 class="fw-bold mb-3 text-white"><i class="fas fa-history text-primary me-2"></i>Active Syllabus Node</h5>
+                {% for enrollment in continue_courses|slice:":1" %}
+                    <div class="glass-card p-4 resume-card">
+                        <div class="row align-items-center g-4">
+                            <div class="col-md-8">
+                                <h5 class="fw-bold text-white mb-1">{{ enrollment.course.title }}</h5>
+                                <p class="text-muted small mb-3">Estimated Time Remaining: ~4 Hours</p>
+                                
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="progress flex-grow-1" style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ enrollment.progress_percentage }}%;"></div>
+                                    </div>
+                                    <span class="text-primary fw-bold font-monospace small">{{ enrollment.progress_percentage }}%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 text-md-end">
+                                <a href="{% url 'course_detail' enrollment.course.id %}" class="btn btn-outline-custom px-4 py-2">
+                                    Resume Lesson <i class="fas fa-chevron-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- ==========================================
+         THIRD SECTION: RECOMMENDED COURSES (Netflix-Style)
+         ========================================== -->
+    <div class="mb-5">
+        <h5 class="fw-bold mb-3 text-white"><i class="fas fa-film text-secondary me-2"></i>Recommended Paths</h5>
+        <div class="netflix-slider">
+            {% for course in recommended_courses %}
+                <div class="glass-card p-0 netflix-card">
+                    <div class="netflix-img-placeholder {% if forloop.counter|divisibleby:2 %}frontend{% endif %}">
+                        &lt;{{ course.skills.all.first.name|default:'CODE' }} /&gt;
+                    </div>
+                    <div class="p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary small" style="font-size:10px;">{{ course.difficulty }}</span>
+                            <span class="text-warning small" style="font-size:11px;"><i class="fas fa-star me-1"></i>4.8</span>
+                        </div>
+                        <h6 class="fw-bold text-white mb-2 text-truncate" title="{{ course.title }}">{{ course.title }}</h6>
+                        <p class="text-muted small mb-3 text-truncate" style="font-size:12px;">{{ course.description }}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary">
+                            <span class="text-muted font-monospace" style="font-size:11px;"><i class="far fa-clock me-1"></i>{{ course.duration }}</span>
+                            <a href="{% url 'course_detail' course.id %}" class="btn-primary-gradient px-3 py-1.5" style="font-size:11.5px; padding: 6px 16px !important; border-radius: 6px; text-decoration: none;">Enroll</a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="w-100 text-center py-4 glass-card text-muted">
+                    <p class="small mb-0">No course recommendations available. Update your settings to populate goals.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ==========================================
+         FOURTH SECTION: CAREER ROADMAP PREVIEW
+         ========================================== -->
+    {% if roadmap %}
+        <div class="mb-5">
+            <h5 class="fw-bold mb-3 text-white"><i class="fas fa-map text-primary me-2"></i>Roadmap Node Preview</h5>
+            <div class="glass-card p-4">
+                <div class="roadmap-preview-line">
+                    {% for item in roadmap|slice:":5" %}
+                        <div class="roadmap-preview-node">
+                            <a href="{% url 'module_view' item.module.id %}" class="roadmap-preview-circle {% if item.completed %}completed{% elif item.unlocked %}current{% else %}locked{% endif %}" title="{% if item.completed %}Completed{% elif item.unlocked %}In Progress{% else %}Locked{% endif %}">
+                                {% if item.completed %}
+                                    <i class="fas fa-check"></i>
+                                {% else %}
+                                    {{ forloop.counter }}
+                                {% endif %}
+                            </a>
+                            <span class="roadmap-node-label text-truncate d-block" title="{{ item.module.title }}">{{ item.module.title }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'planner' %}" class="small text-primary fw-bold text-decoration-none">View Complete Interactive Roadmap <i class="fas fa-arrow-right ms-1" style="font-size:10px;"></i></a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- ==========================================
+         SIXTH SECTION: ACHIEVEMENTS, BADGES, CERTIFICATES
+         ========================================== -->
+    <div>
+        <h5 class="fw-bold mb-3 text-white"><i class="fas fa-medal text-warning me-2"></i>Unlocked Credentials</h5>
+        <div class="row g-4">
+            <!-- Badges -->
+            <div class="col-lg-6">
+                <div class="glass-card p-4 h-100">
+                    <h6 class="fw-bold text-white mb-3">Earned Milestone Badges</h6>
+                    <div class="d-flex gap-3">
+                        <div class="bg-dark bg-opacity-40 p-3 rounded text-center border border-secondary" style="flex:1;">
+                            <i class="fas fa-fire text-danger h4 mb-1"></i>
+                            <div class="fw-bold small text-white">Streak Master</div>
+                            <span class="text-muted" style="font-size:9.5px;">Auto unlocked</span>
+                        </div>
+                        <div class="bg-dark bg-opacity-40 p-3 rounded text-center border border-secondary" style="flex:1;">
+                            <i class="fas fa-terminal text-info h4 mb-1"></i>
+                            <div class="fw-bold small text-white">Syntax Scout</div>
+                            <span class="text-muted" style="font-size:9.5px;">First code run</span>
+                        </div>
+                        <div class="bg-dark bg-opacity-40 p-3 rounded text-center border border-secondary" style="flex:1; opacity: 0.5;">
+                            <i class="fas fa-trophy text-muted h4 mb-1"></i>
+                            <div class="fw-bold small text-muted">Node Architect</div>
+                            <span class="text-muted" style="font-size:9.5px;">100% path graduation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Certificates -->
+            <div class="col-lg-6">
+                <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <h6 class="fw-bold text-white mb-2">Graduation Diplomas</h6>
+                        <p class="text-muted small">Verify course completion by downloading your digital certificates.</p>
+                    </div>
+                    {% if certificates %}
+                        <div class="d-flex flex-column gap-2 mt-3">
+                            {% for cert in certificates|slice:":2" %}
+                                <div class="d-flex justify-content-between align-items-center bg-dark bg-opacity-40 p-2 px-3 border border-secondary rounded">
+                                    <span class="small text-white-50"><i class="fas fa-award text-success me-2"></i>{{ cert.course.title }}</span>
+                                    <a href="{% url 'generate_pdf_certificate' cert.id %}" target="_blank" class="small text-primary text-decoration-none">View PDF</a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-dark bg-dark bg-opacity-30 border-secondary text-muted small mb-0 mt-3">
+                            <i class="fas fa-info-circle me-1"></i> No certificates earned yet. Finish 100% of any course syllabus to unlock credentials.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

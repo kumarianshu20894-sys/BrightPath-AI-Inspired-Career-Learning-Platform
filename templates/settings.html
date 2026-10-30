@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Settings Workspace{% endblock %}
+
+{% block extra_head %}
+<style>
+    .settings-nav {
+        border-right: 1px solid var(--border);
+    }
+    @media (max-width: 768px) {
+        .settings-nav {
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+    }
+    .settings-tab-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        padding: 12px 20px;
+        width: 100%;
+        text-align: left;
+        font-weight: 500;
+        border-radius: var(--radius-sm);
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .settings-tab-btn:hover {
+        background: rgba(255,255,255,0.03);
+        color: var(--text-main);
+    }
+    .settings-tab-btn.active {
+        background: rgba(37,99,235,0.08);
+        color: var(--primary);
+        font-weight: 600;
+    }
+    .settings-panel-content {
+        display: none;
+    }
+    .settings-panel-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5" data-aos="fade-up">
+    <!-- Header -->
+    <div class="border-bottom border-secondary pb-3 mb-5">
+        <h2 class="fw-bold text-gradient-primary m-0">Account Settings</h2>
+        <p class="text-muted small mt-1">Manage profile parameters, developer credentials, color scheme preferences, and security permissions.</p>
+    </div>
+
+    <div class="row g-5">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3 settings-nav">
+            <div class="d-flex flex-column gap-2">
+                <button class="settings-tab-btn active" onclick="switchSettingsTab('theme', this)">
+                    <i class="fas fa-palette"></i> Theme & Display
+                </button>
+                <button class="settings-tab-btn" onclick="switchSettingsTab('profile', this)">
+                    <i class="fas fa-user-edit"></i> Edit Profile
+                </button>
+                <button class="settings-tab-btn" onclick="switchSettingsTab('password', this)">
+                    <i class="fas fa-key"></i> Password Security
+                </button>
+                <button class="settings-tab-btn text-danger" onclick="switchSettingsTab('danger', this)">
+                    <i class="fas fa-exclamation-triangle"></i> Danger Zone
+                </button>
+            </div>
+        </div>
+
+        <!-- Settings Body -->
+        <div class="col-md-9">
+            <div class="glass-card p-4 p-md-5">
+
+                <!-- 1. THEME PANEL -->
+                <div class="settings-panel-content active" id="settings-theme">
+                    <h4 class="fw-bold mb-3 text-white"><i class="fas fa-palette text-primary me-2"></i>Theme Preference</h4>
+                    <p class="text-muted small mb-4">Toggle between our custom developer themes or let your system preferences decide.</p>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="bg-dark bg-opacity-40 p-4 border border-secondary rounded-3 text-center cursor-pointer" onclick="setAppTheme('dark')">
+                                <i class="fas fa-moon text-primary mb-3" style="font-size:35px;"></i>
+                                <h5 class="fw-bold text-white mb-2">Enterprise Dark</h5>
+                                <p class="text-muted small mb-3">Our premium dark theme optimized for coding focus and eye comfort.</p>
+                                <span class="badge bg-primary px-3 py-1.5" id="badge-theme-dark">Active Selection</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-dark bg-opacity-40 p-4 border border-secondary rounded-3 text-center cursor-pointer" onclick="setAppTheme('light')">
+                                <i class="fas fa-sun text-warning mb-3" style="font-size:35px;"></i>
+                                <h5 class="fw-bold text-white mb-2">Clarity Light</h5>
+                                <p class="text-muted small mb-3">Clean and high-contrast light theme suitable for bright environments.</p>
+                                <span class="badge bg-secondary px-3 py-1.5" id="badge-theme-light">Select Theme</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. EDIT PROFILE PANEL -->
+                <div class="settings-panel-content" id="settings-profile">
+                    <h4 class="fw-bold mb-3 text-white"><i class="fas fa-user-edit text-primary me-2"></i>Profile Settings</h4>
+                    <p class="text-muted small mb-4">Update your general developer details, contact credentials, and target career goal.</p>
+                    
+                    <form method="POST" action="{% url 'settings' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="edit_profile">
+                        
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold">Full Name</label>
+                                <input type="text" name="name" value="{{ user.first_name }}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold">Email Address</label>
+                                <input type="email" name="email" value="{{ user.email }}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold">Phone Number</label>
+                                <input type="text" name="phone" value="{{ profile.phone }}" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold">Current College</label>
+                                <input type="text" name="college" value="{{ profile.college }}" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold">Highest Education Degree</label>
+                                <input type="text" name="education" value="{{ profile.education }}" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold">Target Career Goal</label>
+                                <select name="career_goal" class="form-select">
+                                    <option value="">No Career Goal Set</option>
+                                    {% for goal in goals %}
+                                        <option value="{{ goal.id }}" {% if profile.career_goal == goal %}selected{% endif %}>{{ goal.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-white small fw-bold">Profile Photo</label>
+                                <input type="file" name="profile_photo" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-white small fw-bold">Short Bio / Background Summary</label>
+                                <textarea name="bio" class="form-control" rows="3">{{ profile.bio }}</textarea>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label text-white small fw-bold">Selected Skills</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for skill in skills %}
+                                        <div class="form-check bg-dark bg-opacity-40 p-2 px-3 border border-secondary rounded-pill d-inline-flex align-items-center gap-2">
+                                            <input class="form-check-input ms-0 mt-0" type="checkbox" name="skills" value="{{ skill.id }}" id="skill-{{ skill.id }}" {% if skill in profile.current_skills.all %}checked{% endif %}>
+                                            <label class="form-check-label text-muted small" for="skill-{{ skill.id }}">{{ skill.name }}</label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn-primary-gradient px-4 py-2 border-0">Save Profile Updates</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 3. PASSWORD PANEL -->
+                <div class="settings-panel-content" id="settings-password">
+                    <h4 class="fw-bold mb-3 text-white"><i class="fas fa-key text-primary me-2"></i>Change Password</h4>
+                    <p class="text-muted small mb-4">Modify your password key. This will update your login credentials globally.</p>
+                    
+                    <form method="POST" action="{% url 'settings' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_password">
+                        
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <label class="form-label text-white small fw-bold">Current Password</label>
+                                <input type="password" name="old_password" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold">New Password</label>
+                                <input type="password" name="new_password" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold">Confirm New Password</label>
+                                <input type="password" name="confirm_new_password" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn-primary-gradient px-4 py-2 border-0">Update Password Key</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 4. DANGER ZONE PANEL -->
+                <div class="settings-panel-content" id="settings-danger">
+                    <h4 class="fw-bold mb-3 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Danger Zone</h4>
+                    <p class="text-muted small mb-4">Actions inside this panel are completely permanent and irreversible.</p>
+                    
+                    <div class="bg-danger bg-opacity-10 border border-danger border-opacity-30 rounded-3 p-4">
+                        <h5 class="fw-bold text-white mb-2">Delete BrightPath Account</h5>
+                        <p class="text-muted small mb-4">Deleting your account will purge all course enrollments, project submission history, coding solutions, credentials, and profile details permanently.</p>
+                        
+                        <button type="button" class="btn btn-danger-gradient px-4" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">
+                            <i class="fas fa-trash-alt me-1"></i> Delete Account Permanently
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-danger text-white">
+            <div class="modal-header border-danger">
+                <h5 class="modal-title fw-bold" id="deleteConfirmModalLabel"><i class="fas fa-exclamation-circle text-danger me-2"></i>Delete Account Confirmation</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-trash text-danger mb-3" style="font-size: 50px;"></i>
+                <h5 class="fw-bold">Are you absolutely sure?</h5>
+                <p class="text-muted small">This action is completely permanent and cannot be undone. All your learning progress, XP points, and digital credentials will be permanently erased.</p>
+                
+                <form method="POST" action="{% url 'delete_account' %}" class="mt-4">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger-gradient w-100 py-2.5">
+                        Yes, Delete My Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Tab switching controls
+    function switchSettingsTab(tabName, btnElement) {
+        // Toggle buttons
+        document.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+        
+        // Toggle panels
+        document.querySelectorAll('.settings-panel-content').forEach(p => p.classList.remove('active'));
+        document.getElementById(`settings-${tabName}`).classList.add('active');
+    }
+
+    // Theme switching actions
+    function setAppTheme(theme) {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+        }
+        updateThemeBadges();
+    }
+
+    function updateThemeBadges() {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const darkBadge = document.getElementById('badge-theme-dark');
+        const lightBadge = document.getElementById('badge-theme-light');
+        
+        if (currentTheme === 'dark') {
+            darkBadge.className = 'badge bg-primary px-3 py-1.5';
+            darkBadge.innerText = 'Active Selection';
+            lightBadge.className = 'badge bg-secondary px-3 py-1.5';
+            lightBadge.innerText = 'Select Theme';
+        } else {
+            lightBadge.className = 'badge bg-primary px-3 py-1.5';
+            lightBadge.innerText = 'Active Selection';
+            darkBadge.className = 'badge bg-secondary px-3 py-1.5';
+            darkBadge.innerText = 'Select Theme';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateThemeBadges();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Sign Up{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center min-vh-100 py-5" style="background: var(--bg-main);">
+    <div class="container" style="max-width: 520px;" data-aos="zoom-in">
+        <!-- Brand logo -->
+        <div class="text-center mb-4">
+            <a href="{% url 'index' %}" class="d-inline-flex align-items-center gap-2 mb-2">
+                <div class="logo-icon" style="width: 44px; height: 44px; font-size: 18px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;">&lt;/&gt;</div>
+                <span class="fw-bold text-gradient-primary h3 m-0" style="font-family: 'Outfit', sans-serif; letter-spacing: -0.5px;">BrightPath</span>
+            </a>
+            <p class="text-muted small">Begin your personalized learning journey today</p>
+        </div>
+
+        <div class="glass-card p-4 p-md-5">
+            <!-- Toast messages container -->
+            {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                        <div class="alert alert-danger bg-opacity-10 border-danger text-danger small rounded-3 p-2 px-3 m-0" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>{{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="POST" action="{% url 'signup' %}">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label text-white small fw-bold">Full Name</label>
+                        <div class="input-group bg-dark border border-secondary rounded-3 px-3 py-1.5 align-items-center">
+                            <span class="text-muted me-2"><i class="far fa-user"></i></span>
+                            <input type="text" name="name" class="form-control bg-transparent border-0 text-white p-0" placeholder="Anshu Kumari" style="box-shadow: none;" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Email Address</label>
+                        <div class="input-group bg-dark border border-secondary rounded-3 px-3 py-1.5 align-items-center">
+                            <span class="text-muted me-2"><i class="far fa-envelope"></i></span>
+                            <input type="email" name="email" class="form-control bg-transparent border-0 text-white p-0" placeholder="anshu2gmail.com" style="box-shadow: none;" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Phone Number</label>
+                        <div class="input-group bg-dark border border-secondary rounded-3 px-3 py-1.5 align-items-center">
+                            <span class="text-muted me-2"><i class="fas fa-phone-alt" style="font-size:12.5px;"></i></span>
+                            <input type="text" name="number" class="form-control bg-transparent border-0 text-white p-0" placeholder="+91 9876543210" style="box-shadow: none;" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Date of Birth</label>
+                        <div class="input-group bg-dark border border-secondary rounded-3 px-3 py-1.5 align-items-center">
+                            <span class="text-muted me-2"><i class="far fa-calendar"></i></span>
+                            <input type="date" name="bd" class="form-control bg-transparent border-0 text-white p-0" style="box-shadow: none;" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-white small fw-bold">Address / Location</label>
+                        <div class="input-group bg-dark border border-secondary rounded-3 px-3 py-1.5 align-items-center">
+                            <span class="text-muted me-2"><i class="fas fa-map-marker-alt" style="font-size:12.5px;"></i></span>
+                            <input type="text" name="address" class="form-control bg-transparent border-0 text-white p-0" placeholder="Jamshedpur, India" style="box-shadow: none;" required>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mb-2">
+                        <label class="form-label text-white small fw-bold">Account Password</label>
+                        <div class="input-group bg-dark border border-secondary rounded-3 px-3 py-1.5 align-items-center">
+                            <span class="text-muted me-2"><i class="fas fa-lock"></i></span>
+                            <input type="password" name="password" class="form-control bg-transparent border-0 text-white p-0" placeholder="••••••••" style="box-shadow: none;" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                    <label class="form-check-label text-muted small" for="termsCheck">
+                        I agree to BrightPath's Terms of Service and Privacy Policy
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-primary-gradient w-100 py-2.5 rounded-3 border-0">
+                    Register Account <i class="fas fa-user-plus ms-1"></i>
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <span class="text-muted small">Already have an account? </span>
+                <a href="{% url 'login' %}" class="small text-primary fw-bold">Sign in here</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

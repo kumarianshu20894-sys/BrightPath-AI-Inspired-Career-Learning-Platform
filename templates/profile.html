@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Profile: {{ user.username }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-cover-panel {
+        height: 200px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        position: relative;
+    }
+    .profile-avatar-container {
+        position: relative;
+        margin-top: -80px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .profile-avatar {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--bg-main);
+        box-shadow: var(--shadow-md);
+        background-color: var(--bg-card);
+    }
+    .profile-avatar-placeholder {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 45px;
+        font-weight: 700;
+        border: 4px solid var(--bg-main);
+        box-shadow: var(--shadow-md);
+        margin: 0 auto;
+    }
+    .profile-stats-box {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5" data-aos="fade-up">
+    <!-- Profile Container Card -->
+    <div class="glass-card p-0 overflow-hidden mb-5">
+        <div class="profile-cover-panel"></div>
+        
+        <!-- Avatar and Username -->
+        <div class="profile-avatar-container">
+            {% if profile.profile_photo %}
+                <img src="{{ profile.profile_photo.url }}" class="profile-avatar" alt="Avatar">
+            {% else %}
+                <div class="profile-avatar-placeholder">
+                    {{ user.first_name|slice:":1"|upper|default:user.username|slice:":1"|upper }}
+                </div>
+            {% endif %}
+            
+            <h3 class="fw-bold text-white mt-3 mb-1">{{ user.first_name|default:user.username }}</h3>
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1.5 rounded-pill fw-bold">
+                Goal: {{ profile.career_goal.name|default:"General Learner" }}
+            </span>
+        </div>
+
+        <!-- Contact & Bio Section -->
+        <div class="p-4 p-md-5 border-top border-secondary">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <h6 class="text-muted text-uppercase font-monospace mb-2" style="font-size: 11px;">Developer Bio</h6>
+                    <p class="text-white small" style="line-height:1.7;">{{ profile.bio|default:"No bio written yet. Head to settings to customize your portfolio details."|linebreaksbr }}</p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted text-uppercase font-monospace mb-2" style="font-size: 11px;">Contact Details</h6>
+                    <ul class="list-unstyled d-flex flex-column gap-2 small text-white-50">
+                        <li><i class="far fa-envelope me-2 text-primary"></i>{{ user.email }}</li>
+                        <li><i class="fas fa-phone me-2 text-primary"></i>{{ profile.phone|default:"N/A" }}</li>
+                        <li><i class="fas fa-university me-2 text-primary"></i>{{ profile.college|default:"N/A" }}</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted text-uppercase font-monospace mb-2" style="font-size: 11px;">Skills Inventory</h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for skill in profile.current_skills.all %}
+                            <span class="badge bg-dark border border-secondary text-white">{{ skill.name }}</span>
+                        {% empty %}
+                            <span class="text-muted small">No skills selected.</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Career Readiness Metrics -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="profile-stats-box">
+                <h5 class="fw-bold text-gradient-primary mb-1">{{ profile.xp }}</h5>
+                <span class="text-muted small">XP Accumulated</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="profile-stats-box">
+                <h5 class="fw-bold text-white mb-1">Level {{ profile.level }}</h5>
+                <span class="text-muted small">Current Level</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="profile-stats-box">
+                <h5 class="fw-bold text-white mb-1">🔥 {{ profile.learning_streak }}</h5>
+                <span class="text-muted small">Active Coding Streak</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="profile-stats-box">
+                <h5 class="fw-bold text-info mb-1">{{ readiness }}%</h5>
+                <span class="text-muted small">Role Competency Score</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievements & Credentials -->
+    <div class="row g-4">
+        <!-- Certificates -->
+        <div class="col-lg-6">
+            <div class="glass-card p-4 h-100">
+                <h5 class="fw-bold text-white mb-4"><i class="fas fa-award text-success me-2"></i>Graduation Diplomas</h5>
+                {% if certificates %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for cert in certificates %}
+                            <div class="d-flex justify-content-between align-items-center bg-dark bg-opacity-40 p-3 border border-secondary rounded">
+                                <div>
+                                    <h6 class="fw-bold text-white mb-1" style="font-size:14.5px;">{{ cert.course.title }}</h6>
+                                    <small class="text-muted" style="font-size: 11px;">Verification: {{ cert.verification_code }}</small>
+                                </div>
+                                <a href="{% url 'generate_pdf_certificate' cert.id %}" target="_blank" class="btn btn-sm btn-outline-custom">View PDF</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-dark bg-dark bg-opacity-30 border-secondary text-muted small mb-0">
+                        <i class="fas fa-info-circle me-1"></i> No credentials earned yet. Finish 100% of a course path to graduation.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Bookmarks -->
+        <div class="col-lg-6">
+            <div class="glass-card p-4 h-100">
+                <h5 class="fw-bold text-white mb-4"><i class="far fa-bookmark text-primary me-2"></i>Bookmarked Notes</h5>
+                {% if bookmarks %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for b in bookmarks %}
+                            <div class="bg-dark bg-opacity-40 p-2.5 px-3 border border-secondary rounded d-flex justify-content-between align-items-center">
+                                <span class="text-white-50 small">
+                                    {% if b.module %}
+                                        <i class="far fa-file-alt text-primary me-2"></i>Module: {{ b.module.title }}
+                                    {% elif b.course %}
+                                        <i class="fas fa-graduation-cap text-success me-2"></i>Course: {{ b.course.title }}
+                                    {% elif b.challenge %}
+                                        <i class="fas fa-code text-warning me-2"></i>Practice: {{ b.challenge.title }}
+                                    {% endif %}
+                                </span>
+                                {% if b.module %}
+                                    <a href="{% url 'module_view' b.module.id %}" class="small text-primary text-decoration-none">Open</a>
+                                {% elif b.course %}
+                                    <a href="{% url 'course_detail' b.course.id %}" class="small text-primary text-decoration-none">Open</a>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-dark bg-dark bg-opacity-30 border-secondary text-muted small mb-0">
+                        <i class="fas fa-info-circle me-1"></i> No bookmarked elements found. Bookmark lessons to display them here.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

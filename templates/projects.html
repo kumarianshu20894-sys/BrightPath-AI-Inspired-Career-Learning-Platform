@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Mini Projects Portal{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container" data-aos="fade-up">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="fw-bold text-gradient-primary">Mini Projects Workspace</h1>
+            <p class="text-muted max-width-600 mx-auto mt-2">Build real-world developer scripts and application configurations to verify your skill readiness.</p>
+        </div>
+
+        <!-- Projects Grid -->
+        <div class="row g-4">
+            {% for project in projects %}
+                <div class="col-lg-6 col-md-12">
+                    <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="badge bg-secondary font-monospace" style="font-size:11px;">
+                                    Module: {{ project.assignment.module.title }}
+                                </span>
+                                
+                                {% if project.status == 'Approved' %}
+                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 font-monospace">
+                                        <i class="fas fa-check-circle me-1"></i> Approved (Grade: {{ project.grade }})
+                                    </span>
+                                {% elif project.status == 'Pending' %}
+                                    <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-1 font-monospace">
+                                        <i class="fas fa-spinner fa-spin me-1"></i> Review Pending
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 font-monospace">
+                                        <i class="far fa-circle me-1"></i> Not Submitted
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <h4 class="fw-bold text-white mb-2">{{ project.assignment.title }}</h4>
+                            <p class="text-muted small" style="line-height:1.7;">{{ project.assignment.description|truncatewords:45 }}</p>
+                            
+                            <div class="bg-dark bg-opacity-30 border border-secondary rounded p-3 mb-3 mt-3">
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block font-monospace" style="font-size: 11px;">XP reward</small>
+                                        <span class="fw-bold text-warning"><i class="fas fa-bolt me-1"></i>{{ project.assignment.xp }} XP</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block font-monospace" style="font-size: 11px;">Submission Date</small>
+                                        <span class="text-white small">
+                                            {% if project.submitted_date %}
+                                                {{ project.submitted_date|date:"M d, Y" }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            {% if project.file %}
+                                <a href="{{ project.file.url }}" class="btn btn-outline-custom px-4 py-2" target="_blank">
+                                    <i class="fas fa-download me-1"></i> Download Solution
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'module_view' project.assignment.module.id %}" class="btn-primary-gradient px-4 py-2" style="font-size: 13px; text-decoration: none;">
+                                {% if project.status == 'Approved' %}
+                                    Review Workspace
+                                {% else %}
+                                    Solve Project <i class="fas fa-arrow-right ms-1"></i>
+                                {% endif %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center py-5">
+                    <div class="max-width-500 mx-auto p-5 glass-card">
+                        <i class="fas fa-project-diagram text-muted mb-3" style="font-size:45px;"></i>
+                        <h5 class="fw-bold">No Active Mini Projects</h5>
+                        <p class="text-muted small">Choose your Career Goal to populate projects corresponding to your learning path.</p>
+                        <a href="{% url 'planner' %}" class="btn-primary-gradient px-4 rounded-pill mt-3">Go to Roadmap</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

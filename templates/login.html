@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Sign In{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center min-vh-100 py-5" style="background: var(--bg-main);">
+    <div class="container" style="max-width: 460px;" data-aos="zoom-in">
+        <!-- Brand logo -->
+        <div class="text-center mb-4">
+            <a href="{% url 'index' %}" class="d-inline-flex align-items-center gap-2 mb-2">
+                <div class="logo-icon" style="width: 44px; height: 44px; font-size: 18px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;">&lt;/&gt;</div>
+                <span class="fw-bold text-gradient-primary h3 m-0" style="font-family: 'Outfit', sans-serif; letter-spacing: -0.5px;">BrightPath</span>
+            </a>
+            <p class="text-muted small">Sign in to resume your career learning journey</p>
+        </div>
+
+        <div class="glass-card p-4 p-md-5">
+            <!-- Toast messages container -->
+            {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} bg-opacity-10 border-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} text-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} small rounded-3 p-2 px-3 m-0" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>{{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label text-white small fw-bold">Email Address</label>
+                    <div class="input-group bg-dark border border-secondary rounded-3 px-3 py-1.5 align-items-center">
+                        <span class="text-muted me-2"><i class="far fa-envelope"></i></span>
+                        <input type="email" name="email" class="form-control bg-transparent border-0 text-white p-0" placeholder="name@example.com" style="box-shadow: none;" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <label class="form-label text-white small fw-bold mb-0">Password</label>
+                        <a href="{% url 'forgot_password' %}" class="small text-primary" style="font-size: 12px;">Forgot password?</a>
+                    </div>
+                    <div class="input-group bg-dark border border-secondary rounded-3 px-3 py-1.5 align-items-center">
+                        <span class="text-muted me-2"><i class="fas fa-lock"></i></span>
+                        <input type="password" name="password" class="form-control bg-transparent border-0 text-white p-0" placeholder="••••••••" style="box-shadow: none;" required>
+                    </div>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" name="remember_me" id="rememberMe">
+                    <label class="form-check-label text-muted small" for="rememberMe">
+                        Keep me signed in for 2 weeks
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-primary-gradient w-100 py-2.5 rounded-3 border-0">
+                    Sign In <i class="fas fa-sign-in-alt ms-1"></i>
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <span class="text-muted small">Don't have an account? </span>
+                <a href="{% url 'signup' %}" class="small text-primary fw-bold">Sign up here</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

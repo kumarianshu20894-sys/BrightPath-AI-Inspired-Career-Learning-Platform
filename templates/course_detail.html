@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - {{ course.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* SaaS Course Details Page Styles */
+    .course-hero-saas {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95)),
+                    url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80') no-repeat center center/cover;
+        padding: 50px 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .syllabus-tab-links .nav-link {
+        color: var(--text-muted);
+        border: 1px solid transparent;
+        font-weight: 500;
+        padding: 12px 24px;
+        border-radius: var(--radius-sm);
+        transition: var(--transition);
+    }
+    .syllabus-tab-links .nav-link.active {
+        background: rgba(37, 99, 235, 0.08) !important;
+        color: var(--primary) !important;
+        border-color: transparent !important;
+    }
+    .timeline-syllabus {
+        position: relative;
+        padding-left: 36px;
+    }
+    .timeline-syllabus::before {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        background: var(--border);
+    }
+    .syllabus-node {
+        position: relative;
+        margin-bottom: 30px;
+    }
+    .syllabus-dot {
+        position: absolute;
+        left: -36px;
+        top: 6px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--bg-card);
+        border: 4px solid var(--border);
+        z-index: 10;
+        transition: var(--transition);
+    }
+    .syllabus-node.completed .syllabus-dot {
+        background: var(--success);
+        border-color: var(--success);
+    }
+    .syllabus-node.unlocked .syllabus-dot {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ===== COURSE HERO HEADER ===== -->
+<section class="course-hero-saas" data-aos="fade-down">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <!-- Left Banner Details -->
+            <div class="col-lg-8">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb small">
+                        <li class="breadcrumb-item"><a href="{% url 'courses' %}" class="text-info">Courses</a></li>
+                        <li class="breadcrumb-item text-white-50 active">{{ course.title }}</li>
+                    </ol>
+                </nav>
+                
+                <h1 class="fw-bold text-gradient-primary mt-2" style="font-family:'Outfit', sans-serif; font-size:3rem;">{{ course.title }}</h1>
+                <p class="text-white-50 mt-3" style="max-width:750px; font-size: 15px; line-height: 1.8;">{{ course.description }}</p>
+                
+                <div class="d-flex flex-wrap gap-4 mt-4 text-white-50 small align-items-center">
+                    <span><i class="far fa-user text-primary me-2"></i>Instructor: <strong>Paul Tech Director</strong></span>
+                    <span><i class="far fa-star text-warning me-2"></i>Rating: <strong>4.8/5.0</strong></span>
+                    <span><i class="far fa-clock text-info me-2"></i>Duration: <strong>{{ course.duration }}</strong></span>
+                    <span><i class="fas fa-layer-group text-accent me-2"></i>Difficulty: <strong>{{ course.difficulty }}</strong></span>
+                </div>
+            </div>
+            
+            <!-- Right Enroll Box -->
+            <div class="col-lg-4">
+                <div class="glass-card p-4 text-center">
+                    {% if is_enrolled %}
+                        <div class="text-success mb-3 fw-bold small"><i class="fas fa-check-circle me-1"></i>Enrolled &amp; Active</div>
+                        <p class="text-muted small mb-0">Continue working through the syllabus modules. Unlock assignments to claim certificates.</p>
+                    {% else %}
+                        <h5 class="fw-bold text-white mb-2">Join Learning Path</h5>
+                        <p class="text-muted small mb-4">Gain complete access to Python compilers, MCQ grading, and printable PDFs.</p>
+                        <form method="POST" action="{% url 'enroll_course' course.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-primary-gradient w-100 py-3 border-0">Enroll Now</button>
+                        </form>
+                    {% endif %}
+                    
+                    <button class="btn btn-outline-custom w-100 mt-3 py-2" id="bookmarkBtn" onclick="toggleCourseBookmark()">
+                        <i class="{% if bookmarked %}fas{% else %}far{% endif %} fa-bookmark me-2 text-info"></i>
+                        <span id="bookmarkText">{% if bookmarked %}Bookmarked{% else %}Bookmark Course{% endif %}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== COURSE DETAILS TABS PANEL ===== -->
+<section class="py-5">
+    <div class="container" data-aos="fade-up">
+        <!-- Tabs Navigation Links -->
+        <ul class="nav nav-pills syllabus-tab-links gap-2 mb-4 border-bottom border-secondary pb-3" id="courseDetailTab" role="tablist">
+            <li class="nav-item"><button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview-pane" type="button">Overview</button></li>
+            <li class="nav-item"><button class="nav-link" id="modules-tab" data-bs-toggle="tab" data-bs-target="#modules-pane" type="button">Syllabus Modules</button></li>
+            <li class="nav-item"><button class="nav-link" id="practice-tab" data-bs-toggle="tab" data-bs-target="#practice-pane" type="button">Coding Practice</button></li>
+            <li class="nav-item"><button class="nav-link" id="quiz-tab" data-bs-toggle="tab" data-bs-target="#quiz-pane" type="button">Quizzes</button></li>
+            <li class="nav-item"><button class="nav-link" id="resources-tab" data-bs-toggle="tab" data-bs-target="#resources-pane" type="button">Resources</button></li>
+            <li class="nav-item"><button class="nav-link" id="discussion-tab" data-bs-toggle="tab" data-bs-target="#discussion-pane" type="button">Discussion</button></li>
+        </ul>
+        
+        <!-- Tab Content Panes -->
+        <div class="tab-content glass-card p-4" id="courseDetailTabContent">
+            <!-- Tab 1: Overview -->
+            <div class="tab-pane fade show active" id="overview-pane" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <h4 class="fw-bold text-white mb-3">Learning Outcomes</h4>
+                        <p class="text-muted small leading-relaxed" style="white-space: pre-line;">{{ course.learning_outcomes }}</p>
+                        
+                        <h4 class="fw-bold text-white mb-3 mt-4">Prerequisites</h4>
+                        <p class="text-muted small" style="white-space: pre-line;">{{ course.prerequisites }}</p>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="bg-dark p-3 rounded border border-secondary">
+                            <h6 class="fw-bold text-info mb-3">Skills Profile</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for skill in course.skills.all %}
+                                    <span class="badge bg-secondary p-2">{{ skill.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab 2: Modules Timeline -->
+            <div class="tab-pane fade" id="modules-pane" role="tabpanel">
+                <h4 class="fw-bold text-white mb-4">Syllabus Outline</h4>
+                <div class="timeline-syllabus">
+                    {% for item in modules_data %}
+                        <div class="syllabus-node {% if item.completed %}completed{% elif item.unlocked %}unlocked{% endif %}">
+                            <div class="syllabus-dot"></div>
+                            <div class="bg-dark bg-opacity-35 p-3 rounded-3 border border-secondary d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                <div>
+                                    <span class="text-info small fw-bold">MODULE {{ item.module.order }}</span>
+                                    <h6 class="text-white fw-bold mt-1 m-0">{{ item.module.title }}</h6>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if is_enrolled and item.unlocked %}
+                                        <a href="{% url 'module_view' item.module.id %}" class="btn-primary-gradient py-1 px-3 small" style="font-size:12px; padding: 6px 16px !important;">Start Lesson</a>
+                                    {% else %}
+                                        <span class="badge bg-secondary"><i class="fas fa-lock me-1"></i> Locked</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Tab 3: Practice Challenges -->
+            <div class="tab-pane fade" id="practice-pane" role="tabpanel">
+                <h4 class="fw-bold text-white mb-3">Playground Challenges</h4>
+                <p class="text-muted small">Solve these modules' problems using browser-based code executors:</p>
+                <div class="row g-3">
+                    {% for item in modules_data %}
+                        {% for challenge in item.module.coding_challenges.all %}
+                            <div class="col-md-6">
+                                <div class="bg-dark p-3 rounded border border-secondary d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-white fw-bold mb-1">{{ challenge.title }}</h6>
+                                        <small class="text-muted">Module: {{ item.module.title }}</small>
+                                    </div>
+                                    <a href="{% url 'coding_playground' challenge.id %}" class="btn btn-sm btn-outline-info rounded-pill px-3">Run Code</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Tab 4: Quizzes -->
+            <div class="tab-pane fade" id="quiz-pane" role="tabpanel">
+                <h4 class="fw-bold text-white mb-3">Module Quizzes</h4>
+                <div class="row g-3">
+                    {% for item in modules_data %}
+                        {% if item.module.quiz %}
+                            <div class="col-md-6">
+                                <div class="bg-dark p-3 rounded border border-secondary d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-white fw-bold mb-1">{{ item.module.quiz.title }}</h6>
+                                        <small class="text-muted"><i class="fas fa-bolt text-warning me-1"></i>+{{ item.module.quiz.xp }} XP</small>
+                                    </div>
+                                    <a href="{% url 'module_view' item.module.id %}?tab=quiz" class="btn btn-sm btn-outline-info rounded-pill px-3">Start Quiz</a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Tab 5: Resources -->
+            <div class="tab-pane fade" id="resources-pane" role="tabpanel">
+                <h4 class="fw-bold text-white mb-3">Learning Resources</h4>
+                <p class="text-muted small">Access references, developer tool documentation, and cheat sheets:</p>
+                <ul>
+                    {% for item in modules_data %}
+                        {% if item.module.official_documentation %}
+                            <li><strong class="text-white">{{ item.module.title }}:</strong> <span class="text-info">{{ item.module.official_documentation }}</span></li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- Tab 6: Discussion Feed -->
+            <div class="tab-pane fade" id="discussion-pane" role="tabpanel">
+                <h4 class="fw-bold text-white mb-3">Student Q&amp;A Feed</h4>
+                <div class="d-flex flex-column gap-3 mb-4">
+                    <div class="bg-dark bg-opacity-40 p-3 rounded border border-secondary">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-info fw-bold small">Siddharth Sen</span>
+                            <small class="text-muted">2 hours ago</small>
+                        </div>
+                        <p class="text-white-50 small mb-0">What is the best way to handle nested loops while writing palindrome checkers in Python? Does list slicing run faster?</p>
+                    </div>
+                    <div class="bg-dark bg-opacity-40 p-3 rounded border border-secondary">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-info fw-bold small">Aanya Roy</span>
+                            <small class="text-muted">Yesterday</small>
+                        </div>
+                        <p class="text-white-50 small mb-0">List slicing (`s[::-1]`) is implemented in C-speed internals under python wrappers and runs faster than reverse-for loops!</p>
+                    </div>
+                </div>
+                <div class="card bg-dark border-secondary p-3">
+                    <h6 class="text-white mb-2">Post a Query</h6>
+                    <textarea class="form-control bg-dark text-white border-secondary mb-3" rows="3" placeholder="Type your comment..."></textarea>
+                    <button class="btn btn-primary rounded-pill px-4 align-self-end btn-sm" onclick="alert('Comment posted locally!')">Submit Comment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleCourseBookmark() {
+        const btn = document.getElementById('bookmarkBtn');
+        const icon = btn.querySelector('i');
+        const text = document.getElementById('bookmarkText');
+        
+        fetch("{% url 'toggle_bookmark' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: "course_id={{ course.id }}"
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'added') {
+                icon.className = 'fas fa-bookmark me-2 text-info';
+                text.textContent = 'Bookmarked';
+                alert('✨ Course added to your bookmarks!');
+            } else {
+                icon.className = 'far fa-bookmark me-2 text-info';
+                text.textContent = 'Bookmark Course';
+                alert('🗑️ Course removed from your bookmarks.');
+            }
+        });
+    }
+</script>
+{% endblock %}

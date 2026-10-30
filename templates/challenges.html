@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - LeetCode Style Challenges{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container" data-aos="fade-up">
+        <div class="text-center mb-5">
+            <h1 class="fw-bold text-gradient-primary">Coding Practice Challenges</h1>
+            <p class="text-muted max-width-600 mx-auto mt-2">Crack algorithm challenges right inside the browser. Submit solutions to test suites and gain XP levels.</p>
+        </div>
+
+        <!-- Filter panel -->
+        <div class="glass-card mb-4 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-white fw-bold small">Filter Practice Problems:</span>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-info rounded-pill px-3 active" onclick="filterChallenges('all')">All</button>
+                <button class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="filterChallenges('Easy')">Easy</button>
+                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 text-white" onclick="filterChallenges('Medium')">Medium</button>
+                <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="filterChallenges('Hard')">Hard</button>
+            </div>
+        </div>
+
+        <!-- Tabular List -->
+        <div class="glass-card p-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="background:transparent;">
+                    <thead class="border-secondary">
+                        <tr>
+                            <th class="ps-4">Challenge Title</th>
+                            <th>Difficulty</th>
+                            <th>Parent Module</th>
+                            <th>XP points</th>
+                            <th class="pe-4 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for chal in challenges %}
+                            <tr class="challenge-row border-secondary" data-diff="{{ chal.difficulty }}">
+                                <td class="ps-4 text-white fw-bold">
+                                    <i class="far fa-file-code text-info me-2"></i>{{ chal.title }}
+                                </td>
+                                <td>
+                                    {% if chal.difficulty == 'Easy' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1">Easy</span>
+                                    {% elif chal.difficulty == 'Medium' %}
+                                        <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-1">Medium</span>
+                                    {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1">Hard</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-white-50 small">{{ chal.module.title }}</td>
+                                <td class="font-monospace text-warning">+{{ chal.xp }} XP</td>
+                                <td class="pe-4 text-end">
+                                    <a href="{% url 'coding_playground' chal.id %}" class="btn btn-sm btn-outline-info rounded-pill px-3">Solve Problem <i class="fas fa-chevron-right ms-1"></i></a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">No coding challenges found in database. Seed courses first.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterChallenges(diff) {
+        // Toggle active button
+        const buttons = document.querySelectorAll('.d-flex.gap-2 button');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        
+        event.target.classList.add('active');
+
+        // Filter table rows
+        const rows = document.querySelectorAll('.challenge-row');
+        rows.forEach(row => {
+            const rowDiff = row.getAttribute('data-diff');
+            if (diff === 'all' || rowDiff === diff) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

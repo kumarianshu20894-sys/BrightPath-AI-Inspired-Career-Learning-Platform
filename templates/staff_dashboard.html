@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5" data-aos="fade-up">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-5 border-bottom border-secondary pb-4">
+        <div>
+            <h1 class="fw-bold text-gradient-primary m-0">Staff Dashboard</h1>
+            <p class="text-muted small mt-1 mb-0">Grade coding assignments, analyze curriculum performance, and manage student submissions.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 bg-dark p-2 border border-secondary rounded-pill px-3">
+            <span class="text-info fw-bold small"><i class="fas fa-user-edit me-1"></i> Staff Permissions Active</span>
+        </div>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-4 col-md-6">
+            <div class="quick-stat-widget">
+                <div class="widget-icon text-warning"><i class="fas fa-file-invoice"></i></div>
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold" style="font-size:10px;">Pending Grads Reviews</span>
+                    <h3 class="fw-bold mb-0 text-white">{{ pending_submissions }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="quick-stat-widget">
+                <div class="widget-icon text-primary"><i class="fas fa-users"></i></div>
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold" style="font-size:10px;">Total Registered Students</span>
+                    <h3 class="fw-bold mb-0 text-primary">{{ total_students }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="quick-stat-widget">
+                <div class="widget-icon text-success"><i class="fas fa-book"></i></div>
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold" style="font-size:10px;">Active Courses Offered</span>
+                    <h3 class="fw-bold mb-0 text-success">{{ total_courses }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Submissions review section -->
+    <div class="row g-4 mb-5">
+        <div class="col-12">
+            <div class="glass-card">
+                <h5 class="fw-bold mb-4 text-white"><i class="fas fa-clipboard-check text-primary me-2"></i>Recent Assignment Submissions</h5>
+                
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0" style="background:transparent;">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Assignment Title</th>
+                                <th>Submitted File</th>
+                                <th>Date Submitted</th>
+                                <th>Status</th>
+                                <th class="text-end">Action / Grading</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sub in submissions %}
+                                <tr>
+                                    <td class="text-white fw-bold">
+                                        <i class="far fa-user text-muted me-2"></i>{{ sub.user.username }}
+                                    </td>
+                                    <td>{{ sub.assignment.title }}</td>
+                                    <td>
+                                        {% if sub.submitted_file %}
+                                            <a href="{{ sub.submitted_file.url }}" download class="text-info small"><i class="fas fa-download me-1"></i> Download Solution</a>
+                                        {% else %}
+                                            <span class="text-muted small">No file</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-white-50 small">{{ sub.date_submitted|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        {% if sub.status == 'Approved' %}
+                                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-bold" style="font-size:11px;">Approved ({{ sub.grade }})</span>
+                                        {% elif sub.status == 'Rejected' %}
+                                            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-1 fw-bold" style="font-size:11px;">Rejected</span>
+                                        {% else %}
+                                            <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-1 fw-bold" style="font-size:11px;">Pending Review</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if sub.status == 'Pending' %}
+                                            <form method="POST" action="{% url 'staff_dashboard' %}" class="d-inline-flex gap-2 justify-content-end align-items-center">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="submission_id" value="{{ sub.id }}">
+                                                <input type="text" name="grade" placeholder="Grade (A+)" class="form-control py-1 px-2 border-secondary" style="width: 90px; font-size:12px; height: 32px !important; padding: 2px 8px !important;" required>
+                                                
+                                                <button type="submit" name="action" value="approve" class="btn btn-sm btn-success py-1.5 px-3" style="font-size: 11.5px; border-radius: var(--radius-sm); background:var(--success); border:none;">Approve</button>
+                                                <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger py-1.5 px-3" style="font-size: 11.5px; border-radius: var(--radius-sm); background:var(--danger); border:none;">Reject</button>
+                                            </form>
+                                        {% else %}
+                                            <span class="text-muted small">Grading Finalized</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No assignment submissions recorded yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

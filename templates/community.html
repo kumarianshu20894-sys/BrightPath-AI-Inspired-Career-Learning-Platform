@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Learner Community &amp; Leaderboard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row g-5">
+        <!-- Left: Question feed -->
+        <div class="col-lg-8" data-aos="fade-right">
+            <h3 class="fw-bold text-gradient-primary mb-4"><i class="far fa-comments me-2"></i>Q&amp;A Discussion Forum</h3>
+            
+            <!-- Create Thread Box -->
+            <div class="glass-card mb-4 p-3 bg-dark bg-opacity-40 border-secondary">
+                <h6 class="text-white mb-2 fw-bold">Start a Discussion</h6>
+                <div class="d-flex gap-2">
+                    <input type="text" class="form-control bg-dark border-secondary text-white" placeholder="What coding question do you have today?" style="box-shadow:none;">
+                    <button class="btn btn-primary btn-sm px-4 rounded-pill" onclick="alert('Discussion thread initialized locally!')">Ask</button>
+                </div>
+            </div>
+            
+            <!-- Thread posts -->
+            <div class="d-flex flex-column gap-3">
+                <div class="glass-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-circle-nav" style="width:30px; height:30px; font-size:11px;">RM</div>
+                            <span class="text-white fw-bold small">Rohan Mehta</span>
+                        </div>
+                        <span class="badge bg-secondary" style="font-size:10px;">Python Dev</span>
+                    </div>
+                    <h6 class="text-white fw-bold">Why do sqlite3 connections throw transaction locking errors in Django?</h6>
+                    <p class="text-muted small">I'm testing concurrent database write queries and keep getting "Database is locked" outputs on local server runs.</p>
+                    <div class="border-top border-secondary pt-2 mt-3 d-flex justify-content-between align-items-center small text-white-50">
+                        <span><i class="far fa-eye me-1"></i> 142 views</span>
+                        <a href="#" class="text-info" onclick="alert('Comment box coming soon!')"><i class="far fa-comment me-1"></i> 4 Replies</a>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-circle-nav" style="width:30px; height:30px; font-size:11px;">KS</div>
+                            <span class="text-white fw-bold small">Karan Sharma</span>
+                        </div>
+                        <span class="badge bg-secondary" style="font-size:10px;">Frontend</span>
+                    </div>
+                    <h6 class="text-white fw-bold">CSS Flexbox centering vs CSS Grid centring: which is standard?</h6>
+                    <p class="text-muted small">Is aligning content using absolute positioning and translates outdated now that CSS3 layout structures are fully standard?</p>
+                    <div class="border-top border-secondary pt-2 mt-3 d-flex justify-content-between align-items-center small text-white-50">
+                        <span><i class="far fa-eye me-1"></i> 95 views</span>
+                        <a href="#" class="text-info"><i class="far fa-comment me-1"></i> 3 Replies</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Leaderboard -->
+        <div class="col-lg-4" data-aos="fade-left">
+            <div class="glass-card">
+                <h5 class="fw-bold text-gradient-primary mb-3"><i class="fas fa-trophy me-2"></i>BrightPath Leaderboard</h5>
+                <p class="text-muted small mb-4">Top active learners ranked by total experience points gained during sandbox compiles.</p>
+                
+                <div class="d-flex flex-column gap-3">
+                    {% for profile in leaderboard %}
+                        <div class="d-flex align-items-center gap-3 border-bottom border-secondary pb-3">
+                            <span class="font-monospace fw-bold {% if forloop.counter <= 3 %}text-warning{% else %}text-muted{% endif %}" style="font-size: 18px; width: 25px;">#{{ forloop.counter }}</span>
+                            <div class="avatar-circle-nav" style="width:36px; height:36px; font-size:12px;">
+                                {{ profile.user.first_name|slice:":1"|upper|default:profile.user.username|slice:":1"|upper }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="text-white small fw-bold mb-0 text-truncate" style="max-width: 140px;">{{ profile.user.first_name|default:profile.user.username }}</h6>
+                                <small class="text-muted" style="font-size:11px;">Level {{ profile.level }}</small>
+                            </div>
+                            <span class="text-warning small font-monospace fw-bold">{{ profile.xp }} XP</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted small">No profile rankings recorded yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

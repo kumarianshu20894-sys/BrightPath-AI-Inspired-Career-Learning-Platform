@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if my_learning %}
+        BrightPath - My Learning Workspace
+    {% else %}
+        BrightPath - Explore Professional Paths
+    {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Netflix-Style Grid Layout */
+    .course-card-netflix {
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--bg-card);
+    }
+    .course-card-netflix:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+    }
+    
+    .course-banner-placeholder {
+        height: 180px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 800;
+        font-size: 24px;
+        letter-spacing: -0.5px;
+    }
+    .course-banner-placeholder.style-2 {
+        background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+    }
+
+    .rating-star {
+        color: var(--warning);
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container" data-aos="fade-up">
+        
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="fw-bold text-gradient-primary">
+                {% if my_learning %}
+                    My Learning Workspace
+                {% else %}
+                    Explore Professional Paths
+                {% endif %}
+            </h1>
+            <p class="text-muted max-width-600 mx-auto mt-2">
+                {% if my_learning %}
+                    Track your active courses, continue syllabus modules, and view graduation criteria.
+                {% else %}
+                    Filter and search through our curated modules designed to take you from absolute scratch to job-ready.
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Filters Block (Only show if not strictly filtering my learning, or show simplified search) -->
+        <div class="glass-card mb-5 p-3">
+            <form method="GET" action="{% url 'courses' %}" class="row g-3 align-items-center">
+                {% if my_learning %}
+                    <input type="hidden" name="my_learning" value="1">
+                {% endif %}
+                
+                <!-- Search -->
+                <div class="col-lg-5">
+                    <div class="input-group bg-dark border border-secondary rounded-pill px-3 py-1.5 align-items-center">
+                        <span class="text-muted me-2"><i class="fas fa-search"></i></span>
+                        <input type="text" name="q" value="{{ query }}" class="form-control bg-transparent border-0 text-white p-0" placeholder="Search skills, topics, course names..." style="box-shadow:none;">
+                    </div>
+                </div>
+                
+                <!-- Goal Filter -->
+                <div class="col-lg-3">
+                    <select name="goal" class="form-select bg-dark text-white border-secondary rounded-pill py-2 px-3" onchange="this.form.submit()">
+                        <option value="">Filter by Career Goal</option>
+                        {% for goal in goals %}
+                            <option value="{{ goal.id }}" {% if goal_filter == goal.id|stringformat:"s" %}selected{% endif %}>{{ goal.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="col-lg-4 d-flex gap-2 justify-content-end">
+                    <button type="submit" class="btn-primary-gradient px-4 rounded-pill border-0 py-2">Filter Catalog</button>
+                    {% if query or goal_filter %}
+                        <a href="{% url 'courses' %}{% if my_learning %}?my_learning=1{% endif %}" class="btn btn-outline-custom rounded-pill px-4 py-2"><i class="fas fa-times me-2"></i>Clear</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Course Cards Grid (Netflix-style cards) -->
+        <div class="row g-4">
+            {% for course in courses %}
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
+                    <div class="course-card-netflix h-100 d-flex flex-column justify-content-between">
+                        
+                        <!-- Thumbnail banner -->
+                        <div>
+                            <div class="course-banner-placeholder {% if forloop.counter|divisibleby:2 %}style-2{% endif %}">
+                                &lt;{{ course.skills.all.first.name|default:'CODE' }} /&gt;
+                            </div>
+                            
+                            <div class="p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 fw-bold" style="font-size:10px;">{{ course.difficulty }}</span>
+                                    <span class="rating-star"><i class="fas fa-star me-1"></i>4.9 <small class="text-muted">(1,250)</small></span>
+                                </div>
+                                
+                                <h5 class="fw-bold text-white mb-2">{{ course.title }}</h5>
+                                <p class="text-muted small" style="line-height:1.7; font-size: 13px;">{{ course.description }}</p>
+                                
+                                <div class="border-top border-secondary pt-3 mt-3">
+                                    <div class="mb-3">
+                                        <small class="text-muted d-block mb-1" style="font-size:11px;">Skills Covered:</small>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% for skill in course.skills.all %}
+                                                <span class="badge bg-dark border border-secondary text-white" style="font-size:10px;">{{ skill.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="p-4 pt-0">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="text-muted small font-monospace"><i class="far fa-clock me-1"></i>{{ course.duration }}</span>
+                                <span class="text-muted small font-monospace"><i class="fas fa-users me-1"></i>4.9k Enrolled</span>
+                            </div>
+                            <a href="{% url 'course_detail' course.id %}" class="btn-primary-gradient w-100 text-center py-2" style="font-size:13px; text-decoration:none; padding: 10px 24px !important;">
+                                View Syllabus Workspace
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center py-5">
+                    <div class="max-width-500 mx-auto p-4 glass-card">
+                        <i class="fas fa-search-minus text-muted mb-3" style="font-size:40px;"></i>
+                        <h5>No Enrolled Courses Found</h5>
+                        <p class="text-muted small">You haven't enrolled in any courses yet or none match your query.</p>
+                        <a href="{% url 'courses' %}" class="btn-primary-gradient px-4 rounded-pill mt-3">Explore Catalog</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</section>
+{% endblock %}

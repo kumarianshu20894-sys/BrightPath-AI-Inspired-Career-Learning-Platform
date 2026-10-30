@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Onboarding Wizard{% endblock %}
+
+{% block extra_head %}
+<style>
+    .onboarding-wizard {
+        max-width: 800px;
+        margin: 40px auto;
+    }
+    .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 40px;
+        position: relative;
+    }
+    .step-indicator::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--border);
+        z-index: 1;
+    }
+    .step-progress-bar {
+        position: absolute;
+        top: 20px;
+        left: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        z-index: 1;
+        transition: width 0.4s ease;
+        width: 0%;
+    }
+    .step-node {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 40px;
+    }
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--bg-secondary);
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--text-muted);
+        transition: var(--transition);
+    }
+    .step-node.active .step-circle {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+    }
+    .step-node.completed .step-circle {
+        border-color: var(--success);
+        background: var(--success);
+        color: white;
+    }
+    .step-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-top: 8px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .step-node.active .step-label {
+        color: var(--primary);
+    }
+    .step-node.completed .step-label {
+        color: var(--success);
+    }
+    .goal-card {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--bg-card);
+        padding: 20px;
+        height: 100%;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+    .goal-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+    .goal-card.selected {
+        border-color: var(--secondary);
+        background: rgba(6, 182, 212, 0.05);
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+    }
+    .goal-card.selected::before {
+        content: '\f00c';
+        font-family: 'Font Awesome 5 Free';
+        font-weight: 900;
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        color: var(--secondary);
+        font-size: 16px;
+    }
+    .skill-pill {
+        cursor: pointer;
+        padding: 10px 20px;
+        border-radius: 50px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        font-weight: 500;
+        font-size: 13.5px;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .skill-pill:hover {
+        border-color: var(--primary);
+        color: var(--text-main);
+    }
+    .skill-pill.selected {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    }
+    .onboarding-step {
+        display: none;
+    }
+    .onboarding-step.active {
+        display: block;
+        animation: fadeIn 0.4s ease forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="onboarding-wizard">
+        
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="fw-bold text-gradient-primary">Design Your Career Path</h1>
+            <p class="text-muted">Complete your developer profile setup to initialize your custom learning path.</p>
+        </div>
+
+        <!-- Step Indicators -->
+        <div class="step-indicator">
+            <div class="step-progress-bar" id="progressBar"></div>
+            <div class="step-node active" id="node-1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Profile Info</div>
+            </div>
+            <div class="step-node" id="node-2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Choose Goal</div>
+            </div>
+            <div class="step-node" id="node-3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Your Skills</div>
+            </div>
+            <div class="step-node" id="node-4">
+                <div class="step-circle">4</div>
+                <div class="step-label">Generate Path</div>
+            </div>
+        </div>
+
+        <!-- Multi-step Glass Cards Form -->
+        <div class="glass-card p-4 p-md-5">
+            
+            <!-- STEP 1: Complete Profile -->
+            <div class="onboarding-step active" id="step-1">
+                <h4 class="fw-bold mb-3 text-white"><i class="far fa-user-circle me-2 text-primary"></i>Profile Details</h4>
+                <p class="text-muted small mb-4">Tell us about your background to help us customize your learning milestones.</p>
+                
+                <form id="form-step-1" enctype="multipart/form-data">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label text-white small fw-bold">Contact Phone Number</label>
+                            <input type="text" name="phone" value="{{ profile.phone }}" class="form-control" placeholder="+1 (555) 123-4567" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-white small fw-bold">Current College / University</label>
+                            <input type="text" name="college" value="{{ profile.college }}" class="form-control" placeholder="Silicon Valley Tech" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-white small fw-bold">Highest Education Degree</label>
+                            <input type="text" name="education" value="{{ profile.education }}" class="form-control" placeholder="Bachelor of Science in CS" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-white small fw-bold">Profile Picture</label>
+                            <input type="file" name="profile_photo" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-white small fw-bold">Short Bio / Background Summary</label>
+                            <textarea name="bio" class="form-control" rows="3" placeholder="Aspiring developer passionate about building modern web products..." required>{{ profile.bio }}</textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end mt-5">
+                        <button type="submit" class="btn-primary-gradient px-4 rounded-pill border-0 py-2.5">
+                            Continue <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- STEP 2: Choose Career Goal -->
+            <div class="onboarding-step" id="step-2">
+                <h4 class="fw-bold mb-3 text-white"><i class="fas fa-map-marked-alt me-2 text-primary"></i>Choose Career Goal</h4>
+                <p class="text-muted small mb-4">Select the professional title you wish to attain. This establishes your roadmap core.</p>
+                
+                <form id="form-step-2">
+                    <div class="row g-3 mb-4">
+                        {% for goal in goals %}
+                            <div class="col-md-6">
+                                <div class="goal-card {% if profile.career_goal == goal %}selected{% endif %}" onclick="selectGoal(this, '{{ goal.id }}')">
+                                    <h5 class="fw-bold text-white mb-2">{{ goal.name }}</h5>
+                                    <p class="text-muted small mb-3">{{ goal.description }}</p>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for skill in goal.required_skills.all %}
+                                            <span class="badge bg-dark border border-secondary text-white" style="font-size:10px;">{{ skill.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="career_goal" id="selectedGoalInput" value="{{ profile.career_goal.id|default:'' }}">
+                    
+                    <div class="d-flex justify-content-between mt-5">
+                        <button type="button" class="btn btn-outline-custom rounded-pill px-4" onclick="goToStep(1)">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </button>
+                        <button type="submit" class="btn-primary-gradient px-4 rounded-pill border-0 py-2.5" id="btn-submit-step-2">
+                            Continue <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- STEP 3: Select Current Skills -->
+            <div class="onboarding-step" id="step-3">
+                <h4 class="fw-bold mb-3 text-white"><i class="fas fa-tools me-2 text-primary"></i>Select Your Current Skills</h4>
+                <p class="text-muted small mb-4">Select any skills you are already familiar with. We'll mark these completed on your roadmap!</p>
+                
+                <form id="form-step-3">
+                    <div class="d-flex flex-wrap gap-2 mb-5">
+                        {% for skill in skills %}
+                            <div class="skill-pill {% if skill in profile.current_skills.all %}selected{% endif %}" onclick="toggleSkill(this, '{{ skill.id }}')">
+                                <i class="{% if skill in profile.current_skills.all %}fas fa-check-circle{% else %}far fa-circle{% endif %}"></i>
+                                {{ skill.name }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div id="skillsInputsContainer">
+                        {% for skill in profile.current_skills.all %}
+                            <input type="hidden" name="skills" value="{{ skill.id }}" data-id="{{ skill.id }}">
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-custom rounded-pill px-4" onclick="goToStep(2)">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </button>
+                        <button type="submit" class="btn-primary-gradient px-4 rounded-pill border-0 py-2.5">
+                            Generate My Roadmap <i class="fas fa-cogs ms-1"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- STEP 4: Path Generation Animation -->
+            <div class="onboarding-step" id="step-4">
+                <div class="text-center py-5">
+                    <div class="spinner-grow text-primary mb-4" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Generating...</span>
+                    </div>
+                    <h4 class="fw-bold text-white mb-2">Analyzing Career Goals & Skills...</h4>
+                    <p class="text-muted small max-width-400 mx-auto">We are compiling your learning milestones, sequencing modules, and creating your verifiable credential verification hashes.</p>
+                    
+                    <div class="progress mt-4 mx-auto" style="height: 6px; max-width: 300px; background: rgba(255,255,255,0.06); border-radius: 3px;">
+                        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" id="generateProgress" role="progressbar" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // State management for wizard steps
+    let currentStep = 1;
+
+    function updateStepIndicator() {
+        // Update nodes
+        for (let i = 1; i <= 4; i++) {
+            const node = document.getElementById(`node-${i}`);
+            if (i < currentStep) {
+                node.classList.add('completed');
+                node.classList.remove('active');
+            } else if (i === currentStep) {
+                node.classList.add('active');
+                node.classList.remove('completed');
+            } else {
+                node.classList.remove('active', 'completed');
+            }
+        }
+        
+        // Progress Bar Line
+        const width = ((currentStep - 1) / 3) * 100;
+        document.getElementById('progressBar').style.width = `${width}%`;
+    }
+
+    function goToStep(step) {
+        document.querySelectorAll('.onboarding-step').forEach(el => el.classList.remove('active'));
+        document.getElementById(`step-${step}`).classList.add('active');
+        currentStep = step;
+        updateStepIndicator();
+    }
+
+    // Goal Selection Action
+    function selectGoal(element, goalId) {
+        document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
+        element.classList.add('selected');
+        document.getElementById('selectedGoalInput').value = goalId;
+    }
+
+    // Skill Selection Action
+    function toggleSkill(element, skillId) {
+        const container = document.getElementById('skillsInputsContainer');
+        element.classList.toggle('selected');
+        
+        if (element.classList.contains('selected')) {
+            element.querySelector('i').className = 'fas fa-check-circle';
+            // Add hidden input
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'skills';
+            input.value = skillId;
+            input.setAttribute('data-id', skillId);
+            container.appendChild(input);
+        } else {
+            element.querySelector('i').className = 'far fa-circle';
+            // Remove hidden input
+            const input = container.querySelector(`input[data-id="${skillId}"]`);
+            if (input) input.remove();
+        }
+    }
+
+    // AJAX Submissions for Steps
+    document.getElementById('form-step-1').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        formData.append('step', '1');
+        
+        fetch("{% url 'onboarding' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                goToStep(2);
+            }
+        });
+    });
+
+    document.getElementById('form-step-2').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const goalId = document.getElementById('selectedGoalInput').value;
+        if (!goalId) {
+            alert('Please select a target Career Goal to proceed.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('step', '2');
+        formData.append('career_goal', goalId);
+        
+        fetch("{% url 'onboarding' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                goToStep(3);
+            }
+        });
+    });
+
+    document.getElementById('form-step-3').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        formData.append('step', '3');
+        
+        goToStep(4);
+        
+        // Trigger Loading Bar Animation for step 4
+        let width = 0;
+        const progressEl = document.getElementById('generateProgress');
+        const interval = setInterval(() => {
+            width += 15;
+            if (width > 100) {
+                width = 100;
+                clearInterval(interval);
+            }
+            progressEl.style.width = `${width}%`;
+        }, 300);
+        
+        fetch("{% url 'onboarding' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 2000);
+            }
+        });
+    });
+</script>
+{% endblock %}

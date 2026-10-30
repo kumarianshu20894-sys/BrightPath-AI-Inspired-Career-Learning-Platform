@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}BrightPath - Progress Analytics{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        text-align: center;
+        transition: var(--transition);
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary);
+    }
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        margin-top: 8px;
+        margin-bottom: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5" data-aos="fade-up">
+    <!-- Header -->
+    <div class="border-bottom border-secondary pb-3 mb-5">
+        <h2 class="fw-bold text-gradient-primary m-0">Performance & Progress</h2>
+        <p class="text-muted small mt-1">Review your skill readiness metrics, active learning streaks, and detailed historical XP log.</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+                <i class="fas fa-bolt text-warning" style="font-size:24px;"></i>
+                <div class="text-muted small text-uppercase mt-2 font-monospace">Total Accumulated XP</div>
+                <div class="stat-value text-gradient-primary">{{ total_xp }}</div>
+                <small class="text-muted">Ranked top 15%</small>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+                <i class="fas fa-fire text-danger" style="font-size:24px;"></i>
+                <div class="text-muted small text-uppercase mt-2 font-monospace">Active Learning Streak</div>
+                <div class="stat-value text-white">🔥 {{ streak }} Day{{ streak|pluralize }}</div>
+                <small class="text-success fw-bold"><i class="fas fa-arrow-up me-1"></i> Streak Active</small>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+                <i class="fas fa-chart-line text-info" style="font-size:24px;"></i>
+                <div class="text-muted small text-uppercase mt-2 font-monospace">Career Readiness Score</div>
+                <div class="stat-value text-info">{{ readiness }}%</div>
+                <small class="text-muted">Target: {{ profile.career_goal.name }}</small>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+                <i class="fas fa-award text-primary" style="font-size:24px;"></i>
+                <div class="text-muted small text-uppercase mt-2 font-monospace">Current Level</div>
+                <div class="stat-value text-primary">Level {{ level }}</div>
+                <small class="text-muted">Next Level: {{ total_xp|add:"45" }} XP</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphs Section -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-7">
+            <div class="glass-card h-100">
+                <h5 class="fw-bold mb-4 text-white"><i class="fas fa-tasks text-primary me-2"></i>Active Course Progress</h5>
+                {% if enrollments %}
+                    <canvas id="completionsChart" style="max-height: 320px;"></canvas>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-chart-bar mb-3" style="font-size:40px;"></i>
+                        <p class="small">Enroll in courses to generate visual progress analytics.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="glass-card h-100">
+                <h5 class="fw-bold mb-4 text-white"><i class="fas fa-history text-primary me-2"></i>Weekly Activity Index</h5>
+                {% if enrollments %}
+                    <canvas id="weeklyXpChart" style="max-height: 320px;"></canvas>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-chart-line mb-3" style="font-size:40px;"></i>
+                        <p class="small">Submit tasks and modules to plot weekly activity indexes.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Log & Bookmarks -->
+        <div class="col-lg-7">
+            <!-- XP Log -->
+            <div class="glass-card mb-4">
+                <h5 class="fw-bold mb-4 text-white"><i class="fas fa-file-invoice text-primary me-2"></i>Recent Milestones Log</h5>
+                <div class="d-flex flex-column gap-3">
+                    {% for item in notifications %}
+                        <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-3">
+                            <div>
+                                <p class="text-white small mb-1">{{ item.text }}</p>
+                                <span class="text-muted small" style="font-size:11px;"><i class="far fa-clock me-1"></i>{{ item.date_created|date:"M d, Y H:i" }}</span>
+                            </div>
+                            <span class="badge bg-success bg-opacity-10 text-success font-monospace">+25 XP</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted small mb-0">No milestones achieved yet. Complete modules to log XP history.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Achievements & Badges -->
+        <div class="col-lg-5">
+            <div class="glass-card">
+                <h5 class="fw-bold mb-4 text-white"><i class="fas fa-medal text-primary me-2"></i>Earned Badges</h5>
+                <div class="row g-3 text-center">
+                    <div class="col-4">
+                        <div class="bg-dark bg-opacity-40 p-3 border border-secondary rounded-3">
+                            <i class="fas fa-fire text-danger mb-2" style="font-size: 28px;"></i>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 12px;">Streak Master</h6>
+                            <small class="text-muted font-monospace" style="font-size:9px;">Active Streak</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-dark bg-opacity-40 p-3 border border-secondary rounded-3">
+                            <i class="fas fa-terminal text-info mb-2" style="font-size: 28px;"></i>
+                            <h6 class="fw-bold text-white mb-0" style="font-size: 12px;">Code Cadet</h6>
+                            <small class="text-muted font-monospace" style="font-size:9px;">First Code Run</small>
+                        </div>
+                    </div>
+                    {% if completed_courses_count > 0 %}
+                        <div class="col-4">
+                            <div class="bg-dark bg-opacity-40 p-3 border border-secondary rounded-3">
+                                <i class="fas fa-graduation-cap text-success mb-2" style="font-size: 28px;"></i>
+                                <h6 class="fw-bold text-white mb-0" style="font-size: 12px;">Alumni Node</h6>
+                                <small class="text-muted font-monospace" style="font-size:9px;">Graduated Path</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+        const labelColor = isDark ? '#94A3B8' : '#64748B';
+        
+        // Completions Bar Chart
+        const barCtx = document.getElementById('completionsChart');
+        if (barCtx) {
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ course_names_json|safe }},
+                    datasets: [{
+                        label: 'Progress Percentage',
+                        data: {{ course_progress_json|safe }},
+                        backgroundColor: '#2563EB',
+                        borderRadius: 6,
+                        maxBarThickness: 35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { color: labelColor },
+                            max: 100
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: labelColor }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Weekly Line Chart
+        const lineCtx = document.getElementById('weeklyXpChart');
+        if (lineCtx) {
+            new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Activity Score',
+                        data: [15, 30, 20, 45, 60, 20, {{ streak|add:15 }}],
+                        borderColor: '#06B6D4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.05)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#06B6D4'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { color: labelColor }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: labelColor }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

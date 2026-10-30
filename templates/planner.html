@@ -1,0 +1,898 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if module %}
+        BrightPath - Lesson Workspace: {{ module.title }}
+    {% else %}
+        BrightPath - Visual Path Roadmap
+    {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Premium Visual Roadmaps styling */
+    .roadmap-timeline-flow {
+        position: relative;
+        max-width: 650px;
+        margin: 40px auto;
+        padding-left: 20px;
+    }
+    .roadmap-connector-line {
+        position: absolute;
+        left: 28px;
+        top: 20px;
+        bottom: 20px;
+        width: 4px;
+        background: var(--border);
+        z-index: 1;
+    }
+    .roadmap-connector-active {
+        position: absolute;
+        left: 28px;
+        top: 20px;
+        height: 60%;
+        width: 4px;
+        background: var(--success);
+        z-index: 2;
+        box-shadow: 0 0 10px var(--success);
+    }
+    .roadmap-node-item {
+        position: relative;
+        padding-left: 45px;
+        margin-bottom: 40px;
+    }
+    .roadmap-node-circle {
+        position: absolute;
+        left: 16px;
+        top: 8px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--bg-secondary);
+        border: 4px solid var(--border);
+        z-index: 10;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+    }
+    .roadmap-node-item.completed .roadmap-node-circle {
+        background: var(--success) !important;
+        border-color: var(--success) !important;
+        color: white !important;
+        box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+    }
+    .roadmap-node-item.active .roadmap-node-circle {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: white !important;
+        box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+    }
+    .roadmap-node-item.locked .roadmap-node-circle {
+        background: var(--bg-secondary);
+        border-color: var(--border);
+        color: var(--text-muted);
+        opacity: 0.7;
+    }
+    
+    /* Split Lesson workspace styling */
+    .lesson-workspace-split {
+        display: flex;
+        height: calc(100vh - 70px);
+        overflow: hidden;
+    }
+    .lesson-sidebar-left {
+        width: 320px;
+        border-right: 1px solid var(--border);
+        background: var(--bg-secondary);
+        overflow-y: auto;
+        padding: 24px;
+        flex-shrink: 0;
+    }
+    .lesson-content-right {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 30px;
+        background: var(--bg-main);
+    }
+    @media (max-width: 992px) {
+        .lesson-workspace-split {
+            flex-direction: column;
+            height: auto;
+            overflow: visible;
+        }
+        .lesson-sidebar-left {
+            width: 100%;
+            height: auto;
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+        }
+    }
+
+    /* LeetCode Split in Playground Pane */
+    .leetcode-split-row {
+        display: flex;
+        gap: 20px;
+        height: 520px;
+    }
+    .leetcode-desc-panel {
+        width: 40%;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        overflow-y: auto;
+        height: 100%;
+    }
+    .leetcode-editor-panel {
+        width: 60%;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .terminal-console {
+        background: #0D1117;
+        font-family: 'Courier New', Courier, monospace;
+        color: #E2E8F0;
+        padding: 15px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        font-size: 13px;
+        height: 140px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    .terminal-console.error {
+        color: var(--danger);
+        border-color: var(--danger);
+    }
+    .challenge-btn {
+        transition: var(--transition);
+        text-align: left;
+    }
+    .challenge-btn.active {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: white !important;
+    }
+    
+    /* Disable look settings */
+    .nav-link[disabled] {
+        cursor: not-allowed;
+        opacity: 0.55;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if module %}
+    <!-- ===== LESSON SPLIT WORKSPACE (IF MODULE PRESENT) ===== -->
+    <div class="lesson-workspace-split">
+        
+        <!-- Left: Course Navigation & Checklist -->
+        <aside class="lesson-sidebar-left">
+            <a href="{% url 'course_detail' course.id %}" class="small text-primary fw-bold text-decoration-none d-block mb-4">
+                <i class="fas fa-arrow-left me-1"></i> Back to Syllabus
+            </a>
+            
+            <h5 class="fw-bold text-white mb-1">{{ course.title }}</h5>
+            <span class="badge bg-primary bg-opacity-10 text-primary mb-4" style="font-size:10px;">{{ course.difficulty }} Path</span>
+            
+            <div class="mb-4">
+                <small class="text-muted d-block mb-1">Course Progress</small>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px;">
+                        <div class="progress-bar bg-success" id="sidebarProgressBar" style="width: 0%;"></div>
+                    </div>
+                    <span class="text-muted small font-monospace" id="sidebarProgressPct">0%</span>
+                </div>
+            </div>
+            
+            <hr class="border-secondary mb-4">
+            
+            <h6 class="fw-bold text-white mb-3">Syllabus Modules</h6>
+            <div class="d-flex flex-column gap-2">
+                {% for mod in course.modules.all %}
+                    <a href="{% url 'module_view' mod.id %}" class="d-flex align-items-center justify-content-between p-2.5 rounded border border-secondary text-decoration-none {% if mod.id == module.id %}bg-primary bg-opacity-10 border-primary text-white{% else %}text-muted{% endif %}" style="font-size:13px;">
+                        <span class="text-truncate" style="max-width: 200px;">{{ mod.order }}. {{ mod.title }}</span>
+                        <i class="far fa-circle text-muted" id="mod-icon-{{ mod.order }}"></i>
+                    </a>
+                {% endfor %}
+            </div>
+        </aside>
+        
+        <!-- Right: Tab Layout of Notes / Practice / Assignments -->
+        <main class="lesson-content-right">
+            <!-- Breadcrumbs / Top Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <span class="text-muted font-monospace small">Module {{ module.order }} &middot; Lesson Node</span>
+                    <h3 class="fw-bold text-white m-0">{{ module.title }}</h3>
+                </div>
+                <button class="btn btn-outline-custom" onclick="toggleModuleBookmark()">
+                    <i class="{% if bookmarked %}fas text-warning{% else %}far{% endif %} fa-bookmark me-1"></i> Bookmark
+                </button>
+            </div>
+
+            <!-- Glassmorphic Tabs Menu -->
+            <ul class="nav nav-tabs border-secondary mb-4 gap-2" id="lessonWorkspaceTabs" role="tablist">
+                <li class="nav-item">
+                    <button type="button" class="nav-link active bg-transparent text-white border-0 border-bottom border-2 border-primary pb-2 px-3 fw-bold" id="learn-tab" data-bs-target="#learn-pane">📖 Theory Notes</button>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="nav-link bg-transparent text-muted border-0 pb-2 px-3 fw-bold" id="playground-tab" data-bs-target="#comp-pane" {% if not challenges %}style="display:none;"{% endif %}>💻 Code Playground</button>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="nav-link bg-transparent text-muted border-0 pb-2 px-3 fw-bold" id="quiz-tab" data-bs-target="#check-pane" {% if not quiz %}style="display:none;"{% endif %} {% if not all_challenges_passed %}disabled title="Solve all coding challenges to unlock quiz"{% endif %}>📝 Quiz Check {% if not all_challenges_passed %}<i class="fas fa-lock ms-1 text-muted" style="font-size:10px;"></i>{% endif %}</button>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="nav-link bg-transparent text-muted border-0 pb-2 px-3 fw-bold" id="upload-tab" data-bs-target="#upload-pane" {% if not assignment %}style="display:none;"{% endif %} {% if quiz and not quiz_result.passed %}disabled title="Pass the quiz to unlock mini project"{% endif %}>🧩 Mini Project {% if quiz and not quiz_result.passed %}<i class="fas fa-lock ms-1 text-muted" style="font-size:10px;"></i>{% endif %}</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="lessonWorkspaceTabContent">
+                
+                <!-- 1. Theory Notes Pane -->
+                <div class="tab-pane fade show active" id="learn-pane" role="tabpanel">
+                    <div class="glass-card p-4 mb-4">
+                        <h5 class="fw-bold text-white mb-3">Milestone Theory Summary</h5>
+                        <div style="white-space: pre-wrap; line-height: 1.8; color: var(--text-muted); font-size:14.5px;">{{ module.theory }}</div>
+                        
+                        {% if module.code_examples %}
+                            <div class="d-flex justify-content-between align-items-center mt-5 mb-2">
+                                <h6 class="text-white fw-bold m-0">Reference Code Implementation</h6>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-custom py-1 px-3" onclick="copyExampleCode()"><i class="far fa-copy me-1"></i> Copy</button>
+                                    <button class="btn btn-sm btn-outline-custom py-1 px-3" onclick="runExampleInPlayground()"><i class="fas fa-code me-1"></i> Load in Playground</button>
+                                </div>
+                            </div>
+                            <pre class="bg-dark p-3 rounded border border-secondary text-light font-monospace" style="font-size:13px;"><code id="exampleCodeText">{{ module.code_examples }}</code></pre>
+                        {% endif %}
+                    </div>
+
+                    <div class="glass-card p-4">
+                        <h6 class="fw-bold text-white mb-3">External References & Guidelines</h6>
+                        {% if module.official_documentation %}
+                            <div class="mb-3">
+                                <small class="text-muted d-block mb-1">Developer Documentation Links:</small>
+                                <ul class="text-info m-0" style="font-size:13.5px;">
+                                    {% for doc in module.official_documentation.split %}
+                                        <li><a href="{{ doc }}" target="_blank" class="text-info">{{ doc }} <i class="fas fa-external-link-alt ms-1" style="font-size:10px;"></i></a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                        
+                        {% if module.practice_problems %}
+                            <div>
+                                <small class="text-muted d-block mb-1">Self-Practice Guidelines:</small>
+                                <div style="white-space: pre-wrap; font-size: 13.5px;" class="text-muted">{{ module.practice_problems }}</div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Navigation Footer -->
+                    <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top border-secondary">
+                        {% if prev_module %}
+                            <a href="{% url 'module_view' prev_module.id %}" class="btn btn-outline-custom px-4"><i class="fas fa-chevron-left me-1"></i> Prev Lesson</a>
+                        {% else %}
+                            <div></div>
+                        {% endif %}
+                        
+                        {% if challenges %}
+                            <button class="btn-primary-gradient px-4 py-2 border-0" onclick="document.getElementById('playground-tab').click()">Next: Code Playground <i class="fas fa-arrow-right ms-1"></i></button>
+                        {% elif quiz %}
+                            <button class="btn-primary-gradient px-4 py-2 border-0" onclick="document.getElementById('quiz-tab').click()">Next: Take Quiz <i class="fas fa-arrow-right ms-1"></i></button>
+                        {% elif assignment %}
+                            <button class="btn-primary-gradient px-4 py-2 border-0" onclick="document.getElementById('upload-tab').click()">Next: Mini Project <i class="fas fa-arrow-right ms-1"></i></button>
+                        {% else %}
+                            <a href="{% url 'mark_module_complete' module.id %}" class="btn-primary-gradient px-4 py-2 border-0" style="text-decoration: none;">Complete Module <i class="fas fa-chevron-right ms-1"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 2. Code Playground Pane -->
+                <div class="tab-pane fade" id="comp-pane" role="tabpanel">
+                    <div class="leetcode-split-row">
+                        <!-- Left description panel -->
+                        <div class="leetcode-desc-panel">
+                            <h6 class="text-white fw-bold mb-3">Select Practice Task</h6>
+                            <div class="d-flex flex-column gap-2 mb-4">
+                                {% for chal in challenges %}
+                                    <input type="hidden" id="starter-code-{{ chal.id }}" value="{{ chal.starter_code }}">
+                                    <input type="hidden" id="hints-{{ chal.id }}" value="{{ chal.hints }}">
+                                    <input type="hidden" id="desc-{{ chal.id }}" value="{{ chal.description }}">
+                                    
+                                    <button type="button" class="btn btn-outline-custom text-start w-100 p-2.5 rounded border border-secondary text-white challenge-btn" data-id="{{ chal.id }}" data-title="{{ chal.title }}" onclick="selectChallenge('{{ chal.id }}', '{{ chal.title|escapejs }}')">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold small">{{ chal.title }}</span>
+                                            {% if chal.completed %}
+                                                <span class="badge bg-success" style="font-size:9px;"><i class="fas fa-check"></i> Passed</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary" style="font-size:9px;">{{ chal.difficulty }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </button>
+                                {% empty %}
+                                    <p class="text-muted small">No sandboxed coding problems configured for this module.</p>
+                                {% endfor %}
+                            </div>
+
+                            <div id="descWorkspacePrompt" class="text-center py-4">
+                                <i class="fas fa-terminal text-muted mb-2 h4"></i>
+                                <p class="text-muted small">Select a practice task above to load its sandboxed description.</p>
+                            </div>
+                            
+                            <div id="descWorkspaceContent" style="display:none;">
+                                <h6 class="text-info fw-bold mb-2" id="chalWSName">Challenge Title</h6>
+                                <div class="text-muted small" style="white-space:pre-wrap; line-height:1.7;" id="chalWSDesc">Description</div>
+                            </div>
+                        </div>
+
+                        <!-- Right editor and output logs panel -->
+                        <div class="leetcode-editor-panel">
+                            <div class="flex-grow-1 mb-3 position-relative rounded border border-secondary overflow-hidden" style="min-height:300px; background:#1E1E1E;">
+                                <div id="leetcodeEditor" style="width:100%; height:100%;"></div>
+                            </div>
+                            
+                            <div class="d-flex gap-2 mb-3">
+                                <button type="button" class="btn btn-primary btn-sm px-3" onclick="triggerRunSandbox()"><i class="fas fa-play me-1"></i> Run Code</button>
+                                <button type="button" class="btn btn-success btn-sm px-3" onclick="triggerSubmitSandbox()"><i class="fas fa-check-circle me-1"></i> Submit Solution</button>
+                                <button type="button" class="btn btn-outline-custom btn-sm px-3" onclick="triggerShowHint()"><i class="far fa-lightbulb me-1"></i> Hint</button>
+                            </div>
+                            
+                            <div class="terminal-console" id="leetcodeConsole">Console loaded. Select a practice task on the left, then click Run Code.</div>
+                            
+                            <div class="alert alert-success mt-2 small p-2" id="playSuccessAlert" style="display:none;">
+                                <i class="fas fa-check-circle me-1"></i> <span id="playSuccessMsg">Passed!</span>
+                            </div>
+                            <div class="alert alert-danger mt-2 small p-2" id="playErrorAlert" style="display:none;">
+                                <i class="fas fa-times-circle me-1"></i> <span id="playErrorMsg">Assertion Failed</span>
+                            </div>
+                            
+                            <!-- Next Step Navigation -->
+                            <div class="mt-4 pt-3 border-top border-secondary text-end">
+                                {% if quiz %}
+                                    <button type="button" class="btn btn-success btn-sm px-4 py-2" id="nextStepBtn" onclick="document.getElementById('quiz-tab').click()" style="{% if not all_challenges_passed %}display:none;{% endif %} font-weight:600;">Next: Take Quiz <i class="fas fa-arrow-right ms-1"></i></button>
+                                {% elif assignment %}
+                                    <button type="button" class="btn btn-success btn-sm px-4 py-2" id="nextStepBtn" onclick="document.getElementById('upload-tab').click()" style="{% if not all_challenges_passed %}display:none;{% endif %} font-weight:600;">Next: Mini Project <i class="fas fa-arrow-right ms-1"></i></button>
+                                {% else %}
+                                    <a href="{% url 'mark_module_complete' module.id %}" class="btn-primary-gradient px-4 py-2 border-0" id="nextStepBtn" style="{% if not all_challenges_passed %}display:none;{% endif %} text-decoration: none; font-size: 13px; border-radius: 6px; display: inline-block;">Complete Module <i class="fas fa-chevron-right ms-1"></i></a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Quiz Pane -->
+                <div class="tab-pane fade" id="check-pane" role="tabpanel">
+                    <div class="glass-card p-4">
+                        {% if quiz %}
+                            <h4 class="text-gradient-primary fw-bold mb-1">{{ quiz.title }}</h4>
+                            <p class="text-muted small mb-4">Validate your understanding of this module's theory to earn +{{ quiz.xp }} XP points.</p>
+                            
+                            {% if quiz_result %}
+                                <div class="alert {% if quiz_result.passed %}alert-success bg-dark bg-opacity-30 border-success text-success{% else %}alert-danger bg-dark bg-opacity-30 border-danger text-danger{% endif %} p-3 mb-4 small">
+                                    <h6 class="fw-bold mb-1">Previous Result:</h6>
+                                    <p class="mb-0">Score: <strong>{{ quiz_result.score }}%</strong> | Status: <strong>{% if quiz_result.passed %}Passed{% else %}Failed{% endif %}</strong></p>
+                                </div>
+                            {% endif %}
+                            
+                            <form method="POST" action="{% url 'submit_quiz' module.id %}">
+                                {% csrf_token %}
+                                {% for question in quiz.questions.all %}
+                                    <div class="bg-dark bg-opacity-40 p-3 rounded border border-secondary mb-3">
+                                        <h6 class="text-white mb-3">Q{{ forloop.counter }}: {{ question.text }}</h6>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="opt_{{ question.id }}_1" value="1" required>
+                                            <label class="form-check-label text-muted small" for="opt_{{ question.id }}_1">{{ question.option1 }}</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="opt_{{ question.id }}_2" value="2">
+                                            <label class="form-check-label text-muted small" for="opt_{{ question.id }}_2">{{ question.option2 }}</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="opt_{{ question.id }}_3" value="3">
+                                            <label class="form-check-label text-muted small" for="opt_{{ question.id }}_3">{{ question.option3 }}</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="opt_{{ question.id }}_4" value="4">
+                                            <label class="form-check-label text-muted small" for="opt_{{ question.id }}_4">{{ question.option4 }}</label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                
+                                <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+                                    <button type="submit" class="btn-primary-gradient px-4 py-2 border-0">Submit Quiz Answers</button>
+                                    
+                                    {% if quiz_result and quiz_result.passed %}
+                                        {% if assignment %}
+                                            <button type="button" class="btn btn-success btn-sm px-4 py-2" onclick="document.getElementById('upload-tab').click()" style="font-weight:600;">Next: Mini Project <i class="fas fa-arrow-right ms-1"></i></button>
+                                        {% else %}
+                                            <a href="{% url 'mark_module_complete' module.id %}" class="btn-primary-gradient px-4 py-2 border-0" style="text-decoration: none; font-size:13px;">Complete Module <i class="fas fa-chevron-right ms-1"></i></a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </form>
+                        {% else %}
+                            <p class="text-muted text-center py-4 small mb-0">No quiz configured for this module.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 4. Assignment Upload Pane -->
+                <div class="tab-pane fade" id="upload-pane" role="tabpanel">
+                    <div class="glass-card p-4">
+                        {% if assignment %}
+                            <h4 class="text-gradient-primary fw-bold mb-1">{{ assignment.title }}</h4>
+                            <p class="text-muted small mb-4">Complete the requirements below and upload your solution file to earn +{{ assignment.xp }} XP points.</p>
+                            
+                            <div class="bg-dark bg-opacity-40 p-3 border border-secondary rounded mb-4 small">
+                                <h6 class="text-white fw-bold mb-2">Assignment Requirements:</h6>
+                                <p class="text-muted mb-0" style="line-height:1.7;">{{ assignment.description }}</p>
+                            </div>
+                            
+                            {% if assignment_sub %}
+                                <div class="alert alert-success bg-dark bg-opacity-30 border-success text-success p-3 mb-4 small">
+                                    <h6 class="fw-bold mb-1">Grading Status:</h6>
+                                    <p class="mb-1">Submitted File: <a href="{{ assignment_sub.submitted_file.url }}" class="text-info text-decoration-underline" target="_blank">{{ assignment_sub.submitted_file.name }}</a></p>
+                                    <p class="mb-0">Status: <strong>{{ assignment_sub.status }} (Grade: {{ assignment_sub.grade|default:"A+" }})</strong></p>
+                                </div>
+                            {% endif %}
+                            
+                            <form method="POST" action="{% url 'submit_assignment' module.id %}" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="mb-4">
+                                    <label class="form-label text-white small fw-bold">Select Archive / Code File (.py, .zip, .pdf):</label>
+                                    <input type="file" name="file" class="form-control" required>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                                    <button type="submit" class="btn-primary-gradient px-4 py-2 border-0">Upload Solution Package</button>
+                                    
+                                    {% if assignment_sub %}
+                                        <a href="{% url 'mark_module_complete' module.id %}" class="btn btn-success btn-sm px-4 py-2" style="font-weight: 600; text-decoration: none;">Complete Module &amp; Unlock Next <i class="fas fa-chevron-right ms-1"></i></a>
+                                    {% endif %}
+                                </div>
+                            </form>
+                        {% else %}
+                            <p class="text-muted text-center py-4 small mb-0">No assignments configured for this module.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+{% else %}
+    <!-- ===== GENERAL PATH ROADMAP PLATFORM (IF MODULE NOT PRESENT) ===== -->
+    <div class="container py-5" data-aos="fade-up">
+        <h2 class="fw-bold text-gradient-primary mb-2 text-center">Your Interactive Learning Path</h2>
+        <p class="text-muted text-center mb-5 max-width-600 mx-auto">Track your milestones, completed competencies, and target roles in a visual interactive node tree.</p>
+        
+        {% if not career_goal %}
+            <div class="glass-card text-center p-5 mt-5 max-width-600 mx-auto">
+                <i class="fas fa-map-marked-alt text-muted mb-3" style="font-size: 48px;"></i>
+                <h5 class="fw-bold">No Career Goal Specified</h5>
+                <p class="text-muted small">Choose your career goal and specify your current skills in the onboarding page to generate roadmaps.</p>
+                <a href="{% url 'onboarding' %}" class="btn-primary-gradient px-4 rounded-pill mt-3">Select Goal</a>
+            </div>
+        {% else %}
+            <!-- Progress Banner -->
+            <div class="glass-card p-4 p-md-5 mb-5" style="background: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(6,182,212,0.05) 100%);">
+                <div class="row align-items-center g-4">
+                    <div class="col-md-8">
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill mb-2 fw-bold" style="font-size:11px;">Path Goal</span>
+                        <h3 class="fw-bold text-white mb-2">{{ career_goal.name }}</h3>
+                        <p class="text-muted small mb-3">{{ career_goal.description }}</p>
+                        
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="progress flex-grow-1" style="height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ readiness }}%;"></div>
+                            </div>
+                            <span class="fw-bold text-success font-monospace small">{{ readiness }}% Competency</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        {% if next_step %}
+                            <a href="{% url 'module_view' next_step.id %}" class="btn-primary-gradient px-4 py-2.5" style="text-decoration:none;"><i class="fas fa-play me-2"></i> Resume Next Lesson</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row g-5">
+                <!-- Connected Timeline Cards -->
+                <div class="col-lg-8">
+                    <h5 class="fw-bold text-white mb-4"><i class="fas fa-sitemap me-2 text-primary"></i>Syllabus Roadmaps</h5>
+                    <div class="roadmap-timeline-flow">
+                        <div class="roadmap-connector-line"></div>
+                        <div class="roadmap-connector-active" id="activeConnectorLine"></div>
+                        
+                        {% for item in roadmap %}
+                            <div class="roadmap-node-item {% if item.completed %}completed{% elif item.unlocked %}active{% else %}locked{% endif %}" data-order="{{ forloop.counter }}">
+                                <div class="roadmap-node-circle">
+                                    {% if item.completed %}<i class="fas fa-check"></i>{% else %}{{ forloop.counter }}{% endif %}
+                                </div>
+                                <div class="glass-card">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <small class="text-info fw-bold">MODULE {{ item.module.order }}</small>
+                                            <h6 class="fw-bold text-white m-0 mt-1">{{ item.module.title }}</h6>
+                                        </div>
+                                        <div>
+                                            {% if item.completed %}
+                                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 10px;">Completed</span>
+                                            {% elif item.unlocked %}
+                                                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 10px;">Unlocked</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary bg-opacity-10 text-muted" style="font-size: 10px;">Locked</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mb-3">{{ item.module.theory|truncatewords:15 }}</p>
+                                    
+                                    {% if item.unlocked %}
+                                        <a href="{% url 'module_view' item.module.id %}" class="btn btn-sm btn-outline-custom rounded-pill px-3">Enter Module Workspace</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Gaps Panel -->
+                <div class="col-lg-4">
+                    <div class="glass-card mb-4">
+                        <h6 class="fw-bold text-white mb-2"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Missing Skill Matches</h6>
+                        <p class="text-muted small">Bridge these skill requirements to reach 100% competency score:</p>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            {% for skill in missing_skills %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger p-2" style="font-size:12px;"><i class="fas fa-circle-exclamation me-1"></i>{{ skill.name }}</span>
+                            {% empty %}
+                                <span class="badge bg-success bg-opacity-10 text-success p-2" style="font-size:12px;"><i class="fas fa-check-circle me-1"></i>All skills matching!</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% if module %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+<script>
+    // Manual tab switcher to avoid conflicts and recalculate Monaco layout on display
+    document.addEventListener("DOMContentLoaded", () => {
+        const tabButtons = document.querySelectorAll('#lessonWorkspaceTabs .nav-link');
+        const tabPanes = document.querySelectorAll('#lessonWorkspaceTabContent .tab-pane');
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (btn.hasAttribute('disabled')) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Reset active styles
+                tabButtons.forEach(b => {
+                    b.classList.remove('active', 'text-white', 'border-bottom', 'border-2', 'border-primary');
+                    b.classList.add('text-muted');
+                });
+                tabPanes.forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+
+                // Apply active styles to clicked tab
+                btn.classList.remove('text-muted');
+                btn.classList.add('active', 'text-white', 'border-bottom', 'border-2', 'border-primary');
+                
+                const targetSelector = btn.getAttribute('data-bs-target');
+                const targetPane = document.querySelector(targetSelector);
+                if (targetPane) {
+                    targetPane.classList.add('show', 'active');
+                }
+
+                // If opening Code Playground, initialize and recalculate layout of Ace editor
+                if (targetSelector === '#comp-pane') {
+                    initAceEditor();
+                    setTimeout(() => {
+                        if (inlineEditorInstance) {
+                            inlineEditorInstance.resize();
+                        }
+                        // Click first challenge button by default if none preloaded
+                        if (!sandboxChalId) {
+                            const firstBtn = document.querySelector('.challenge-btn');
+                            if (firstBtn) {
+                                firstBtn.click();
+                            }
+                        }
+                    }, 150);
+                }
+            });
+        });
+        
+        // Auto routing based on URL search query parameters (redirect handles)
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('tab');
+        if (activeTab) {
+            let targetBtnId = "";
+            if (activeTab === 'theory') targetBtnId = 'learn-tab';
+            else if (activeTab === 'playground') targetBtnId = 'playground-tab';
+            else if (activeTab === 'quiz') targetBtnId = 'quiz-tab';
+            else if (activeTab === 'upload' || activeTab === 'assignment') targetBtnId = 'upload-tab';
+
+            if (targetBtnId) {
+                const btn = document.getElementById(targetBtnId);
+                if (btn && !btn.hasAttribute('disabled')) {
+                    btn.click();
+                }
+            }
+        }
+    });
+
+    // Bookmark Toggle Ajax call
+    function toggleModuleBookmark() {
+        fetch("{% url 'toggle_bookmark' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: "module_id={{ module.id }}"
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'added') {
+                alert('✨ Lesson bookmarked successfully!');
+                window.location.reload();
+            } else {
+                alert('🗑️ Lesson removed from bookmarks.');
+                window.location.reload();
+            }
+        });
+    }
+
+    // Theory reference code copier
+    function copyExampleCode() {
+        const text = document.getElementById('exampleCodeText').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            alert('📋 Code copied to clipboard!');
+        });
+    }
+
+    // Load theory example in editor
+    function runExampleInPlayground() {
+        const text = document.getElementById('exampleCodeText').textContent;
+        const playTab = document.getElementById('playground-tab');
+        if (playTab) {
+            playTab.click();
+            setTimeout(() => {
+                if (inlineEditorInstance) {
+                    inlineEditorInstance.setValue(text, -1);
+                }
+            }, 300);
+        }
+    }
+
+    // Ace Sandbox Runner & Persistent Solution logic
+    let sandboxChalId = null;
+    let sandboxHints = "";
+    let inlineEditorInstance = null;
+    let editorInitialized = false;
+
+    function initAceEditor() {
+        if (editorInitialized) return;
+        const container = document.getElementById('leetcodeEditor');
+        if (!container) return;
+
+        ace.config.set("basePath", "https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/");
+        inlineEditorInstance = ace.edit("leetcodeEditor");
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        inlineEditorInstance.setTheme(currentTheme === 'light' ? 'ace/theme/tomorrow' : 'ace/theme/tomorrow_night_eighties');
+        inlineEditorInstance.session.setMode("ace/mode/python");
+        inlineEditorInstance.setValue('# Select a challenge on the left to begin\n', -1);
+        inlineEditorInstance.setFontSize(13);
+
+        inlineEditorInstance.setOptions({
+            showPrintMargin: false,
+            highlightActiveLine: true
+        });
+
+        editorInitialized = true;
+        
+        // Set value of challenge code if pre-selected
+        if (sandboxChalId) {
+            const starterInput = document.getElementById('starter-code-' + sandboxChalId);
+            if (starterInput) {
+                inlineEditorInstance.setValue(starterInput.value, -1);
+            }
+        }
+    }
+
+    // Theme switching support for inline editor
+    window.addEventListener('themechange', () => {
+        if (inlineEditorInstance) {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            inlineEditorInstance.setTheme(currentTheme === 'light' ? 'ace/theme/tomorrow' : 'ace/theme/tomorrow_night_eighties');
+        }
+    });
+
+    function selectChallenge(id, title) {
+        sandboxChalId = id;
+        
+        const starter = document.getElementById('starter-code-' + id).value;
+        const hints = document.getElementById('hints-' + id).value;
+        const desc = document.getElementById('desc-' + id).value;
+        
+        sandboxHints = hints;
+        
+        document.getElementById('descWorkspacePrompt').style.display = 'none';
+        document.getElementById('descWorkspaceContent').style.display = 'block';
+        
+        document.getElementById('chalWSName').textContent = title;
+        document.getElementById('chalWSDesc').textContent = desc;
+        
+        if (inlineEditorInstance) {
+            inlineEditorInstance.setValue(starter, -1);
+        }
+        
+        // Toggle active challenge list class
+        document.querySelectorAll('.challenge-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.querySelector(`.challenge-btn[data-id="${id}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
+        
+        // Reset console
+        document.getElementById('leetcodeConsole').textContent = "Console ready. Submit your code script.";
+        document.getElementById('leetcodeConsole').className = "terminal-console";
+        document.getElementById('playSuccessAlert').style.display = 'none';
+        document.getElementById('playErrorAlert').style.display = 'none';
+    }
+
+    function triggerShowHint() {
+        if (sandboxHints) {
+            alert("💡 Challenge Hint:\n" + sandboxHints);
+        } else {
+            alert("No hints configured for this task.");
+        }
+    }
+
+    function triggerRunSandbox() {
+        if (!sandboxChalId) {
+            alert("Please select a practice task first.");
+            return;
+        }
+        const code = inlineEditorInstance ? inlineEditorInstance.getValue() : '';
+        const consoleDiv = document.getElementById('leetcodeConsole');
+        consoleDiv.textContent = "⚙️ Executing script code checker in local sandbox environment...";
+        
+        fetch("{% url 'run_code' module.id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: "code=" + encodeURIComponent(code) + "&challenge_id=" + sandboxChalId
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                consoleDiv.textContent = data.console || "(Successfully executed but returned no output logs)";
+                consoleDiv.className = "terminal-console";
+            } else {
+                consoleDiv.textContent = "Compiler Runtime Error:\n" + data.error + "\n" + data.console;
+                consoleDiv.className = "terminal-console error";
+            }
+        });
+    }
+
+    // Dynamic Quiz Unlocking when Submit Sandbox succeeds
+    function triggerSubmitSandbox() {
+        if (!sandboxChalId) {
+            alert("Please select a practice task first.");
+            return;
+        }
+        const code = inlineEditorInstance ? inlineEditorInstance.getValue() : '';
+        const consoleDiv = document.getElementById('leetcodeConsole');
+        consoleDiv.textContent = "🧪 Running validation assertions on test cases...";
+        
+        document.getElementById('playSuccessAlert').style.display = 'none';
+        document.getElementById('playErrorAlert').style.display = 'none';
+        
+        fetch("{% url 'submit_challenge' module.id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: "code=" + encodeURIComponent(code) + "&challenge_id=" + sandboxChalId
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.passed) {
+                consoleDiv.textContent = data.console || "All assertion conditions cleared!";
+                document.getElementById('playSuccessMsg').textContent = data.message;
+                document.getElementById('playSuccessAlert').style.display = 'block';
+                
+                // Dynamically unlock Quiz tab
+                const quizTab = document.getElementById('quiz-tab');
+                if (quizTab) {
+                    quizTab.removeAttribute('disabled');
+                    quizTab.title = "";
+                    const lockIcon = quizTab.querySelector('.fa-lock');
+                    if (lockIcon) lockIcon.remove();
+                }
+                
+                // Show Next Step button
+                const nextStepBtn = document.getElementById('nextStepBtn');
+                if (nextStepBtn) {
+                    nextStepBtn.style.display = 'inline-block';
+                }
+                
+                // Refresh list item badge
+                const activeBtn = document.querySelector(`.challenge-btn[data-id="${sandboxChalId}"]`);
+                if (activeBtn) {
+                    const badge = activeBtn.querySelector('.badge');
+                    if (badge) {
+                        badge.className = "badge bg-success";
+                        badge.innerHTML = '<i class="fas fa-check"></i> Passed';
+                    }
+                }
+            } else {
+                consoleDiv.textContent = "Assertion failure logs:\n" + data.error + "\n" + data.console;
+                document.getElementById('playErrorMsg').textContent = data.message;
+                document.getElementById('playErrorAlert').style.display = 'block';
+            }
+        });
+    }
+
+    // Sync progress indicators
+    document.addEventListener("DOMContentLoaded", () => {
+        const totalModules = {{ course.modules.count|default:1 }};
+        const currentOrder = {{ module.order|default:1 }};
+        const pct = Math.round((currentOrder / totalModules) * 100);
+        
+        document.getElementById('sidebarProgressPct').textContent = pct + "%";
+        document.getElementById('sidebarProgressBar').style.width = pct + "%";
+        
+        for (let i = 1; i <= totalModules; i++) {
+            const icon = document.getElementById('mod-icon-' + i);
+            if (icon) {
+                if (i < currentOrder) {
+                    icon.className = "fas fa-check-circle text-success";
+                } else if (i === currentOrder) {
+                    icon.className = "fas fa-dot-circle text-primary";
+                } else {
+                    icon.className = "far fa-circle text-muted";
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+
+{% if not module and roadmap %}
+<script>
+    // Calculate and apply height of active connector line in roadmap
+    document.addEventListener("DOMContentLoaded", () => {
+        const completedNodes = document.querySelectorAll('.roadmap-node-item.completed').length;
+        const totalNodes = document.querySelectorAll('.roadmap-node-item').length;
+        
+        if (totalNodes > 0 && completedNodes > 0) {
+            const percentage = (completedNodes / totalNodes) * 100;
+            document.getElementById('activeConnectorLine').style.height = `calc(${percentage}% - 20px)`;
+        } else {
+            document.getElementById('activeConnectorLine').style.height = '0px';
+        }
+    });
+</script>
+{% endif %}
+
+{% endblock %}

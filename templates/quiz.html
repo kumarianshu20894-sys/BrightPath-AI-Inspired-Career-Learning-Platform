@@ -1,0 +1,699 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BrightPath - Quiz</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+
+    <link rel="stylesheet" href="{% static 'style.css'%}">
+
+    <style>
+        .quiz-hero {
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .quiz-hero h1 {
+            font-size: 2.8rem;
+            color: var(--primary);
+        }
+
+        .quiz-hero p {
+            color: var(--text-muted);
+        }
+
+        /* ===== QUIZ CARDS - Pehle wali website jaisa ===== */
+        .quiz-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Shine Effect */
+        .quiz-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(56, 189, 248, 0.08), transparent);
+            transition: 0.7s;
+        }
+
+        .quiz-card:hover::before {
+            left: 100%;
+        }
+
+        .quiz-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            border-color: #38bdf8;
+            box-shadow: 0 15px 40px rgba(56, 189, 248, 0.15);
+        }
+
+        .quiz-card .icon-wrapper {
+            width: 70px;
+            height: 70px;
+            background: rgba(var(--primary-rgb), 0.08);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px auto;
+            transition: 0.3s;
+        }
+
+        .quiz-card:hover .icon-wrapper {
+            background: rgba(var(--primary-rgb), 0.15);
+            transform: scale(1.1);
+        }
+
+        .quiz-card .icon-wrapper i {
+            font-size: 32px;
+            color: var(--primary);
+        }
+
+        .quiz-card h5 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-main);
+        }
+
+        .quiz-card .sub-text {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Quiz Container - Same as before */
+        .quiz-container {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 16px;
+            margin-top: 30px;
+            animation: fadeZoom 0.5s ease;
+        }
+
+        .quiz-container .question {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: var(--text-main);
+        }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            text-align: left;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .option-btn:hover {
+            background: rgba(var(--primary-rgb), 0.08);
+            border-color: var(--primary);
+        }
+
+        .option-btn.selected {
+            background: rgba(var(--primary-rgb), 0.15);
+            border-color: var(--primary);
+        }
+
+        .option-btn.correct {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: var(--success);
+        }
+
+        .option-btn.wrong {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--danger);
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .btn-next {
+            padding: 10px 35px;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: var(--text-inverse);
+            font-weight: 600;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-next:hover {
+            background: rgba(var(--primary-rgb), 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.3);
+        }
+
+        .btn-back-quiz {
+            padding: 8px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .btn-back-quiz:hover {
+            background: rgba(var(--primary-rgb), 0.05);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .congrats-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .congrats-content {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            animation: popup 0.4s ease;
+            border: 1px solid var(--border);
+        }
+
+        .congrats-content h2 {
+            color: var(--success);
+            font-size: 2rem;
+        }
+
+        .congrats-content p {
+            color: var(--text-muted);
+            margin: 15px 0;
+        }
+
+        .congrats-content .btn-continue {
+            padding: 10px 35px;
+            background: var(--success);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .congrats-content .btn-continue:hover {
+            background: rgba(var(--success), 0.9);
+            transform: translateY(-2px);
+        }
+
+        .quiz-progress {
+            background: var(--primary);
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: var(--text-inverse);
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .quiz-hero h1 {
+                font-size: 2.2rem;
+            }
+
+            .quiz-container {
+                padding: 20px;
+            }
+
+            .quiz-container .question {
+                font-size: 1rem;
+            }
+
+            .quiz-card {
+                padding: 20px 15px;
+            }
+
+            .quiz-card .icon-wrapper {
+                width: 55px;
+                height: 55px;
+            }
+
+            .quiz-card .icon-wrapper i {
+                font-size: 26px;
+            }
+
+            .quiz-card h5 {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quiz-hero h1 {
+                font-size: 1.8rem;
+            }
+
+            .quiz-card {
+                padding: 18px 12px;
+            }
+
+            .quiz-card .icon-wrapper {
+                width: 48px;
+                height: 48px;
+            }
+
+            .quiz-card .icon-wrapper i {
+                font-size: 22px;
+            }
+
+            .quiz-card h5 {
+                font-size: 14px;
+            }
+
+            .quiz-card .sub-text {
+                font-size: 11px;
+            }
+
+            .congrats-content {
+                padding: 30px 20px;
+            }
+
+            .congrats-content h2 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+     <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <div class="logo-box">
+                <div class="logo-icon">&lt;/&gt;</div>
+                <div>
+                    <div class="brand-name">BrightPath</div>
+                    <div class="brand-tagline">Code, Learn &amp; Grow</div>
+                </div>
+            </div>
+            <button class="menu-toggle" type="button" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="nav-links-custom ms-auto">
+                    <li><a href="{% url 'index' %}"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="{% url 'about' %}"><i class="fas fa-info-circle"></i> About</a></li>
+                    <li class="dropdown">
+                        <a href="#"><i class="fas fa-book"></i> Services ▾</a>
+                        <div class="dropdown-menu-custom">
+                            <a href="{% url 'course' %}">Learn</a>
+                            <a href="{% url 'dashboard' %}">Progress</a>
+                            <a href="{% url 'quiz' %}">Quiz</a>
+                            <a href="{% url 'planner' %}">Planner</a>
+                        </div>
+                    </li>
+                    <li><a href="{% url 'contact' %}"><i class="fas fa-phone"></i> Contact</a></li>
+                    <li><a href="{% url 'profile' %}" class="active"><i class="fas fa-user"></i> Profile</a></li>
+                </ul>
+                <div class="auth-buttons">
+                    <a href="{% url 'log' %}" class="login-btn">Login</a>
+                    <a href="{% url 'sig' %}" class="signup-btn">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== QUIZ ===== -->
+    <section class="quiz-hero">
+        <div class="container">
+            <h1>Practice <span class="text-gradient">Arena</span></h1>
+            <p>Select a topic and test your knowledge with interactive quizzes.</p>
+        </div>
+    </section>
+
+    <section style="padding-bottom:80px;">
+        <div class="container">
+            <!-- Quiz Grid -->
+            <div class="row g-4" id="quizGrid">
+                <div class="col-lg-3 col-md-4 col-6" onclick="startQuiz('Foundation', quizData.foundation)">
+                    <div class="quiz-card">
+                        <div class="icon-wrapper"><i class="fas fa-laptop"></i></div>
+                        <h5>The Foundation</h5>
+                        <p class="sub-text">Learn how computers work</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6" onclick="startQuiz('Networks', quizData.networks)">
+                    <div class="quiz-card">
+                        <div class="icon-wrapper"><i class="fas fa-satellite-dish"></i></div>
+                        <h5>Computer Networks</h5>
+                        <p class="sub-text">Connect devices &amp; systems</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6" onclick="startQuiz('Python', quizData.python)">
+                    <div class="quiz-card">
+                        <div class="icon-wrapper"><i class="fas fa-code"></i></div>
+                        <h5>The Coder</h5>
+                        <p class="sub-text">Build smart programs</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6" onclick="startQuiz('HTML', quizData.html)">
+                    <div class="quiz-card">
+                        <div class="icon-wrapper"><i class="fas fa-cubes"></i></div>
+                        <h5>Building Blocks</h5>
+                        <p class="sub-text">Start creating web pages</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6" onclick="startQuiz('CSS', quizData.css)">
+                    <div class="quiz-card">
+                        <div class="icon-wrapper"><i class="fas fa-palette"></i></div>
+                        <h5>Style Master</h5>
+                        <p class="sub-text">Bring life to webpages</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6" onclick="startQuiz('JavaScript', quizData.javascript)">
+                    <div class="quiz-card">
+                        <div class="icon-wrapper"><i class="fas fa-gears"></i></div>
+                        <h5>The Logic</h5>
+                        <p class="sub-text">Add interactivity to pages</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6" onclick="startQuiz('Algorithms', quizData.algorithms)">
+                    <div class="quiz-card">
+                        <div class="icon-wrapper"><i class="fas fa-diagram-project"></i></div>
+                        <h5>Algorithms</h5>
+                        <p class="sub-text">Step-by-step problem solving</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6" onclick="startQuiz('Web Dev', quizData.webdev)">
+                    <div class="quiz-card">
+                        <div class="icon-wrapper"><i class="fas fa-globe"></i></div>
+                        <h5>The Web Creator</h5>
+                        <p class="sub-text">Build complete websites</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6" onclick="startQuiz('Database', quizData.database)">
+                    <div class="quiz-card">
+                        <div class="icon-wrapper"><i class="fas fa-database"></i></div>
+                        <h5>The Query Master</h5>
+                        <p class="sub-text">Fetch &amp; manage data</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Container -->
+            <div class="quiz-container" id="quizContainer">
+                <button class="btn-back-quiz" onclick="exitQuiz()"><i class="fas fa-arrow-left"></i> Back</button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 id="quizTopic" style="color:#38bdf8;">Topic</h4>
+                    <span class="quiz-progress" id="quizProgress">1/5</span>
+                </div>
+                <div class="question" id="questionText">Question goes here</div>
+                <div id="optionsContainer"></div>
+                <button class="btn-next mt-3" id="nextBtn" onclick="nextQuestion()">Next →</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CONGRATS MODAL ===== -->
+    <div class="congrats-modal" id="congratsModal">
+        <div class="congrats-content">
+            <h2>🎉 Congratulations!</h2>
+            <p>You have successfully completed the quiz.</p>
+            <button class="btn-continue" onclick="closeCongrats()">Continue</button>
+        </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+     <footer class="footer-custom">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="logo-box mb-3">
+                        <div class="logo-icon" style="width:45px; height:45px; font-size:18px;">&lt;/&gt;</div>
+                        <div>
+                            <div class="brand-name" style="font-size:24px;">BrightPath</div>
+                            <div class="brand-tagline">Code, Learn &amp; Grow</div>
+                        </div>
+                    </div>
+                    <p style="color:#94a3b8; font-size:14px;">Your trusted companion on the journey to becoming a master programmer.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                        <a href="#"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="{% url 'index' %}">Home</a></li>
+                        <li><a href="{% url 'about' %}">About</a></li>
+                        <li><a href="{% url 'course' %}">Courses</a></li>
+                        <li><a href="{% url 'contact' %}">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h5>Services</h5>
+                    <ul>
+                        <li><a href="{% url 'course' %}">Learn Coding</a></li>
+                        <li><a href="{% url 'dashboard' %}">Progress Tracking</a></li>
+                        <li><a href="{% url 'quiz' %}">Practice Quizzes</a></li>
+                        <li><a href="{% url 'planner' %}">Study Planner</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h5>Contact Info</h5>
+                    <ul style="color:#94a3b8; font-size:14px;">
+                        <li><i class="fas fa-map-marker-alt" style="color:#38bdf8; width:25px;"></i> Jamshedpur, India</li>
+                        <li><i class="fas fa-phone" style="color:#38bdf8; width:25px;"></i> +91 1234-567-890</li>
+                        <li><i class="fas fa-envelope" style="color:#38bdf8; width:25px;"></i> support@brightpath.dev</li>
+                        <li><i class="fas fa-clock" style="color:#38bdf8; width:25px;"></i> Mon-Sat 10AM-7PM</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom text-center">
+                <p>&copy; 2026 BrightPath Education. All Rights Reserved. | Made with <i class="fas fa-heart" style="color:#ef4444;"></i> for learners</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const navMenu = document.getElementById('navMenu');
+        menuToggle.addEventListener('click', function () {
+            navMenu.classList.toggle('show');
+            this.querySelector('i').className = navMenu.classList.contains('show') ? 'fas fa-times' : 'fas fa-bars';
+        });
+        document.querySelectorAll('.nav-links-custom a').forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('show');
+                menuToggle.querySelector('i').className = 'fas fa-bars';
+            });
+        });
+
+        // ===== QUIZ DATA =====
+        const quizData = {
+            foundation: [
+                { q: "What is a computer?", options: ["A machine", "An electronic device", "A calculator", "All of the above"], answer: 3 },
+                { q: "What does CPU stand for?", options: ["Central Processing Unit", "Computer Personal Unit", "Central Program Unit", "Control Processing Unit"], answer: 0 },
+                { q: "What is the brain of the computer?", options: ["RAM", "CPU", "Hard Disk", "Monitor"], answer: 1 },
+                { q: "What type of device is a mouse?", options: ["Input device", "Output device", "Storage device", "Software"], answer: 0 },
+                { q: "What is the use of a keyboard?", options: ["To print", "To type data", "To store data", "To display output"], answer: 1 }
+            ],
+            networks: [
+                { q: "What is a computer network?", options: ["A single computer", "Group of connected computers", "A printer", "A storage device"], answer: 1 },
+                { q: "Which device connects multiple computers?", options: ["Monitor", "Router", "Keyboard", "Printer"], answer: 1 },
+                { q: "What does LAN stand for?", options: ["Large Area Network", "Local Area Network", "Long Access Network", "Light Area Network"], answer: 1 },
+                { q: "What is the main purpose of a network?", options: ["Play games", "Share resources", "Print documents", "Store files"], answer: 1 },
+                { q: "Which device connects networks?", options: ["Router", "Mouse", "Keyboard", "Monitor"], answer: 0 }
+            ],
+            python: [
+                { q: "What is Python?", options: ["A snake", "A programming language", "A database", "A browser"], answer: 1 },
+                { q: "Who created Python?", options: ["Elon Musk", "Guido van Rossum", "James Gosling", "Dennis Ritchie"], answer: 1 },
+                { q: "Which symbol is used for comments in Python?", options: ["//", "*/", "#", "**"], answer: 2 },
+                { q: "Which is a Python data type?", options: ["integer", "string", "list", "All of the above"], answer: 3 },
+                { q: "What is the file extension of Python?", options: [".py", ".java", ".html", ".css"], answer: 0 }
+            ],
+            html: [
+                { q: "What does HTML stand for?", options: ["Hyper Text Markup Language", "High Text Machine Language", "Home Tool Markup Language", "Hyperlinks Text Mark Language"], answer: 0 },
+                { q: "Which tag creates a webpage title?", options: ["<head>", "<title>", "<h1>", "<meta>"], answer: 1 },
+                { q: "HTML is used to create?", options: ["Database", "Web pages", "Games", "Software"], answer: 1 },
+                { q: "Which tag is for largest heading?", options: ["<h6>", "<heading>", "<h1>", "<head>"], answer: 2 },
+                { q: "Which tag is for paragraph?", options: ["<p>", "<para>", "<pg>", "<text>"], answer: 0 }
+            ],
+            css: [
+                { q: "What does CSS stand for?", options: ["Computer Style Sheet", "Cascading Style Sheets", "Creative Style System", "Color Style Sheet"], answer: 1 },
+                { q: "What is CSS used for?", options: ["Structure web pages", "Style web pages", "Store data", "Run program"], answer: 1 },
+                { q: "Which symbol is used for class in CSS?", options: ["#", ".", "*", "@"], answer: 1 },
+                { q: "Which symbol is used for ID in CSS?", options: [".", "#", "$", "&"], answer: 1 },
+                { q: "CSS file extension is?", options: [".py", ".java", ".html", ".css"], answer: 3 }
+            ],
+            javascript: [
+                { q: "What is JavaScript used for?", options: ["Styling web pages", "Structuring web pages", "Making web pages interactive", "Storing data"], answer: 2 },
+                { q: "Which keyword declares a variable in JS?", options: ["var", "let", "const", "All of the above"], answer: 3 },
+                { q: "JavaScript runs in which environment?", options: ["Database", "Browser", "Printer", "CPU"], answer: 1 },
+                { q: "Which symbol is for single-line comment in JS?", options: ["*", "#", "**", "//"], answer: 3 },
+                { q: "JavaScript is a?", options: ["Markup language", "Programming language", "Styling language", "Database language"], answer: 1 }
+            ],
+            algorithms: [
+                { q: "What is an algorithm?", options: ["A programming language", "Step by step solution", "A computer device", "A database"], answer: 1 },
+                { q: "Which is an example of an algorithm?", options: ["Washing clothes steps", "Keyboard", "Monitor", "Mouse"], answer: 0 },
+                { q: "What is the first step of an algorithm?", options: ["Output", "Start", "End", "Process"], answer: 1 },
+                { q: "What is the final step of an algorithm?", options: ["Input", "Process", "Output", "Start"], answer: 2 },
+                { q: "Algorithms are used in?", options: ["Cooking only", "Problem Solving", "Printing only", "Gaming only"], answer: 1 }
+            ],
+            webdev: [
+                { q: "What is web development?", options: ["Designing mobile apps", "Creating websites", "Making games", "Writing documents"], answer: 1 },
+                { q: "Which language is used to structure a webpage?", options: ["HTML", "CSS", "PHP", "SQL"], answer: 0 },
+                { q: "Which language is used for styling a webpage?", options: ["HTML", "CSS", "PHP", "SQL"], answer: 1 },
+                { q: "Which language makes websites interactive?", options: ["HTML", "CSS", "JavaScript", "SQL"], answer: 2 },
+                { q: "What is a website?", options: ["A computer program", "A collection of webpages", "A hardware device", "A software tool"], answer: 1 }
+            ],
+            database: [
+                { q: "What is a database?", options: ["A computer device", "A collection of data", "A programming language", "A browser"], answer: 1 },
+                { q: "What does DBMS stand for?", options: ["Database Management System", "Data Backup Management System", "Digital Base Management System", "Data Browser Management System"], answer: 0 },
+                { q: "Which language manages databases?", options: ["HTML", "SQL", "CSS", "Python"], answer: 1 },
+                { q: "What is SQL used for?", options: ["Styling webpages", "Managing databases", "Creating images", "Running hardware"], answer: 1 },
+                { q: "Which is a database?", options: ["Excel", "MySQL", "Chrome", "Photoshop"], answer: 1 }
+            ]
+        };
+
+        // ===== QUIZ ENGINE =====
+        let currentQuiz = [];
+        let currentQuestion = 0;
+        let selectedAnswers = [];
+        let currentTopic = '';
+
+        function startQuiz(topic, questions) {
+            currentQuiz = questions;
+            currentQuestion = 0;
+            selectedAnswers = [];
+            currentTopic = topic;
+
+            document.getElementById('quizGrid').style.display = 'none';
+            document.getElementById('quizContainer').style.display = 'block';
+            document.getElementById('quizTopic').textContent = topic;
+
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = currentQuiz[currentQuestion];
+            document.getElementById('questionText').textContent = q.q;
+            document.getElementById('quizProgress').textContent = `${currentQuestion + 1}/${currentQuiz.length}`;
+
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => selectOption(index);
+                btn.dataset.index = index;
+                container.appendChild(btn);
+            });
+
+            const nextBtn = document.getElementById('nextBtn');
+            if (currentQuestion === currentQuiz.length - 1) {
+                nextBtn.textContent = 'Finish ✓';
+            } else {
+                nextBtn.textContent = 'Next →';
+            }
+
+            if (selectedAnswers[currentQuestion] !== undefined) {
+                const btns = container.querySelectorAll('.option-btn');
+                btns.forEach((btn, i) => {
+                    btn.classList.add('selected');
+                    btn.disabled = true;
+                    if (i === currentQuiz[currentQuestion].answer) {
+                        btn.classList.add('correct');
+                    } else if (i === selectedAnswers[currentQuestion]) {
+                        btn.classList.add('wrong');
+                    }
+                });
+            }
+        }
+
+        function selectOption(index) {
+            if (selectedAnswers[currentQuestion] !== undefined) return;
+
+            selectedAnswers[currentQuestion] = index;
+            const btns = document.getElementById('optionsContainer').querySelectorAll('.option-btn');
+            const correct = currentQuiz[currentQuestion].answer;
+
+            btns.forEach((btn, i) => {
+                btn.classList.add('selected');
+                btn.disabled = true;
+                if (i === correct) {
+                    btn.classList.add('correct');
+                } else if (i === index && i !== correct) {
+                    btn.classList.add('wrong');
+                }
+            });
+        }
+
+        function nextQuestion() {
+            if (selectedAnswers[currentQuestion] === undefined) {
+                alert('Please select an option first!');
+                return;
+            }
+
+            if (currentQuestion < currentQuiz.length - 1) {
+                currentQuestion++;
+                renderQuestion();
+            } else {
+                document.getElementById('congratsModal').style.display = 'flex';
+            }
+        }
+
+        function exitQuiz() {
+            document.getElementById('quizContainer').style.display = 'none';
+            document.getElementById('quizGrid').style.display = 'flex';
+            document.getElementById('congratsModal').style.display = 'none';
+        }
+
+        function closeCongrats() {
+            document.getElementById('congratsModal').style.display = 'none';
+            exitQuiz();
+        }
+    </script>
+</body>
+
+</html>
